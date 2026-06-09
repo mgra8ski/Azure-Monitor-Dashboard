@@ -125,7 +125,7 @@ jobs:
           FULL_SEMVER:   ${{ needs.version.outputs.full_semver }}
           SHA_SHORT:     ${{ needs.version.outputs.sha_short }}
           BRANCH:        ${{ github.ref_name }}
-          BUILD_DATE:    ${{ github.run_started_at }}
+          BUILD_DATE:    ${{ github.run_number }}
           RUN_ID:        ${{ github.run_id }}
         run: |
           sed -i \
