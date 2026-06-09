@@ -1,0 +1,154 @@
+name: Deploy Azure Monitor Dashboard
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'     # np. release/1.2 → wersja 1.2.x
+      - 'hotfix/**'      # np. hotfix/1.1.1
+  pull_request:
+    branches:
+      - main             # PR: oblicz wersję, ale nie deployuj
+  workflow_dispatch:
+    inputs:
+      force_version:
+        description: 'Nadpisz wersję (np. 2.0.0) — opcjonalne'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # JOB 1: Oblicz wersję przez GitVersion
+  # ──────────────────────────────────────────────────────────────
+  version:
+    name: Calculate version
+    runs-on: ubuntu-latest
+    outputs:
+      semver:       ${{ steps.gv.outputs.semVer }}
+      major:        ${{ steps.gv.outputs.major }}
+      minor:        ${{ steps.gv.outputs.minor }}
+      patch:        ${{ steps.gv.outputs.patch }}
+      pre_label:    ${{ steps.gv.outputs.preReleaseLabel }}
+      full_semver:  ${{ steps.gv.outputs.fullSemVer }}
+      informational:${{ steps.gv.outputs.informationalVersion }}
+      sha_short:    ${{ steps.sha.outputs.sha_short }}
+
+    steps:
+      - name: Checkout (full history — GitVersion needs it)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # ← obowiązkowe dla GitVersion
+          fetch-tags: true
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v1
+        with:
+          versionSpec: '5.x'   # GitVersion 5.x — stabilna LTS
+
+      - name: Execute GitVersion
+        id: gv
+        uses: gittools/actions/gitversion/execute@v1
+        with:
+          useConfigFile: true
+          configFilePath: GitVersion.yml
+
+      - name: Override version (manual dispatch)
+        if: ${{ github.event.inputs.force_version != '' }}
+        run: |
+          echo "Nadpisana wersja: ${{ github.event.inputs.force_version }}"
+          # Eksportuje nadpisaną wersję jako output
+          echo "semver=${{ github.event.inputs.force_version }}" >> $GITHUB_OUTPUT
+
+      - name: Short SHA
+        id: sha
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Print version summary
+        run: |
+          echo "## 🏷️ Wersja" >> $GITHUB_STEP_SUMMARY
+          echo "| Pole | Wartość |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| SemVer | \`${{ steps.gv.outputs.semVer }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Full SemVer | \`${{ steps.gv.outputs.fullSemVer }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Informational | \`${{ steps.gv.outputs.informationalVersion }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| SHA | \`${{ steps.sha.outputs.sha_short }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+
+  # ──────────────────────────────────────────────────────────────
+  # JOB 2: Deploy na GitHub Pages
+  # Tylko dla: push na main / release/** / hotfix/**
+  # ──────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: version
+    if: github.event_name != 'pull_request'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Validate index.html
+        run: |
+          if [ ! -f "index.html" ]; then
+            echo "❌ Brak pliku index.html!" && exit 1
+          fi
+          echo "✅ index.html OK ($(wc -c < index.html) bajtów)"
+
+      # Wstrzyknij wersję do index.html przed deployem
+      # Zastępuje placeholder __VERSION__ wartością z GitVersion
+      - name: Inject version into index.html
+        env:
+          SEMVER:        ${{ needs.version.outputs.semver }}
+          FULL_SEMVER:   ${{ needs.version.outputs.full_semver }}
+          SHA_SHORT:     ${{ needs.version.outputs.sha_short }}
+          BRANCH:        ${{ github.ref_name }}
+          BUILD_DATE:    ${{ github.run_started_at }}
+          RUN_ID:        ${{ github.run_id }}
+        run: |
+          sed -i \
+            -e "s|__VERSION__|${SEMVER}|g" \
+            -e "s|__FULL_VERSION__|${FULL_SEMVER}|g" \
+            -e "s|__SHA__|${SHA_SHORT}|g" \
+            -e "s|__BRANCH__|${BRANCH}|g" \
+            -e "s|__BUILD_DATE__|${BUILD_DATE}|g" \
+            -e "s|__RUN_ID__|${RUN_ID}|g" \
+            index.html
+          echo "✅ Wersja wstrzyknięta: ${SEMVER} (${SHA_SHORT})"
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Deployment summary
+        run: |
+          echo "## 🚀 Deploy zakończony" >> $GITHUB_STEP_SUMMARY
+          echo "| Pole | Wartość |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Wersja | \`${{ needs.version.outputs.semver }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | ${{ steps.deployment.outputs.page_url }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SHA | \`${{ needs.version.outputs.sha_short }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY

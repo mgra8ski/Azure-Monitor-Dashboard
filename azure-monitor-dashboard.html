@@ -1,0 +1,2115 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Content-Security-Policy: blokuje inline scripts z zewnątrz, ogranicza fetch do App Insights API -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com;
+  font-src https://fonts.gstatic.com;
+  connect-src 'self' https://api.applicationinsights.io https://api.loganalytics.io;
+  img-src 'self' data:;
+  frame-ancestors 'none';
+">
+<title>Azure Monitor Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#050d1a; --bg2:#081525; --bg3:#0c1e35;
+    --panel:#0d2140; --panel2:#102848;
+    --border:#1a3a5c; --border2:#1f4570;
+    --accent:#0ea5e9; --accent2:#38bdf8;
+    --green:#22d3a0; --yellow:#fbbf24; --red:#f43f5e;
+    --orange:#fb923c; --purple:#a78bfa;
+    --text:#e2efff; --text2:#7aa8cc; --text3:#4a7a9b;
+    --mono:'JetBrains Mono',monospace; --sans:'DM Sans',sans-serif;
+    --header-h:56px; --env-h:48px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(14,165,233,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+  .wrapper{position:relative;z-index:1}
+
+  /* HEADER */
+  header{background:rgba(8,21,37,.95);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:var(--header-h);position:sticky;top:0;z-index:200;backdrop-filter:blur(16px)}
+  .header-left{display:flex;align-items:center;gap:12px;min-width:0}
+  .azure-logo{width:30px;height:30px;flex-shrink:0;background:linear-gradient(135deg,var(--accent),#0284c7);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 0 14px rgba(14,165,233,.45)}
+  .header-title{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .header-title .sep{color:var(--text3);margin:0 5px}
+  .header-title .sub{display:none}
+  .header-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+  .time-range{display:flex;gap:3px}
+  .time-btn{background:transparent;border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:4px;cursor:pointer;transition:all .15s;touch-action:manipulation}
+  .time-btn:hover,.time-btn.active{background:var(--panel2);border-color:var(--accent);color:var(--accent2)}
+  .refresh-indicator{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text3)}
+  .pulse-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse-anim 2s ease-in-out infinite;box-shadow:0 0 5px var(--green)}
+  @keyframes pulse-anim{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+  .last-update{font-family:var(--mono);font-size:9px;color:var(--text3);display:none}
+  .version-badge{font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:3px 8px;white-space:nowrap;cursor:default;display:none;text-decoration:none;transition:border-color .15s,color .15s}
+  .version-badge:hover{border-color:var(--border2);color:var(--text2)}
+  .version-badge .vb-tag{color:var(--accent2)}
+
+  /* ENV BAR */
+  .env-bar{background:rgba(8,21,37,.85);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:6px;height:var(--env-h);position:sticky;top:var(--header-h);z-index:190;backdrop-filter:blur(12px);overflow-x:auto;scrollbar-width:none}
+  .env-bar::-webkit-scrollbar{display:none}
+  .env-label{font-family:var(--mono);font-size:10px;color:var(--text3);margin-right:4px;flex-shrink:0}
+  .env-btn{display:flex;align-items:center;gap:7px;padding:6px 14px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:transparent;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text3);transition:all .18s;flex-shrink:0;touch-action:manipulation;white-space:nowrap;position:relative}
+  .env-btn .env-dot{width:7px;height:7px;border-radius:50%;transition:box-shadow .2s}
+  .env-btn:hover{border-color:var(--border2);color:var(--text2);background:var(--panel2)}
+  .env-btn.active{border-color:var(--env-color,var(--accent));color:var(--env-color,var(--accent));background:rgba(0,0,0,.2)}
+  .env-btn.active .env-dot{box-shadow:0 0 6px var(--env-color,var(--accent))}
+  .env-btn[data-env="dev"] .env-dot{background:#a78bfa}
+  .env-btn[data-env="sit"] .env-dot{background:#38bdf8}
+  .env-btn[data-env="uat"] .env-dot{background:#fbbf24}
+  .env-btn[data-env="prod"] .env-dot{background:#22d3a0}
+  .env-btn[data-env="dev"].active{--env-color:#a78bfa}
+  .env-btn[data-env="sit"].active{--env-color:#38bdf8}
+  .env-btn[data-env="uat"].active{--env-color:#fbbf24}
+  .env-btn[data-env="prod"].active{--env-color:#22d3a0}
+  .env-sep{width:1px;height:20px;background:var(--border);margin:0 4px;flex-shrink:0}
+  .env-key-icon{font-size:10px;opacity:.7}
+  .env-configured .env-key-icon{opacity:1;color:var(--green)}
+  .env-status-chip{margin-left:auto;flex-shrink:0;font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:20px;border:1px solid}
+  .env-status-chip.ok{color:var(--green);border-color:rgba(34,211,160,.3);background:rgba(34,211,160,.07)}
+  .env-status-chip.warn{color:var(--yellow);border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.07)}
+  .env-status-chip.demo{color:var(--text3);border-color:var(--border);background:rgba(255,255,255,.03)}
+  .env-switching{animation:envFlash .3s ease}
+  @keyframes envFlash{0%{opacity:.3}100%{opacity:1}}
+
+  /* DEMO TOGGLE BUTTON */
+  .demo-btn{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:transparent;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text3);transition:all .18s;flex-shrink:0;touch-action:manipulation;white-space:nowrap}
+  .demo-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+  .demo-btn.active{border-color:var(--yellow);color:var(--yellow);background:rgba(251,191,36,.08);box-shadow:0 0 10px rgba(251,191,36,.12)}
+  .demo-btn .demo-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);transition:background .18s,box-shadow .18s;flex-shrink:0}
+  .demo-btn.active .demo-dot{background:var(--yellow);box-shadow:0 0 5px var(--yellow)}
+
+  /* TIMEZONE SELECTOR */
+  .tz-select{background:var(--bg3);border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:10px;padding:4px 6px;border-radius:5px;outline:none;cursor:pointer;transition:border-color .15s,color .15s;max-width:160px;flex-shrink:0}
+  .tz-select:hover,.tz-select:focus{border-color:var(--border2);color:var(--text2)}
+  .tz-label{font-family:var(--mono);font-size:10px;color:var(--text3);flex-shrink:0;white-space:nowrap}
+
+  /* EMPTY STATE */
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;gap:12px;opacity:.45}
+  .empty-icon{font-size:32px}
+  .empty-title{font-family:var(--mono);font-size:13px;color:var(--text2)}
+  .empty-sub{font-family:var(--mono);font-size:11px;color:var(--text3);text-align:center;line-height:1.6}
+
+  /* D365 PRIVILEGE ERRORS */
+  .d365-item{border:1px solid rgba(244,63,94,.2);border-radius:8px;background:rgba(244,63,94,.04);margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+  .d365-item:last-child{margin-bottom:0}
+  .d365-item:hover{border-color:rgba(244,63,94,.4)}
+  .d365-header{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 14px 8px;gap:10px;cursor:pointer;user-select:none}
+  .d365-header-left{min-width:0;flex:1}
+  .d365-title{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--red);margin-bottom:3px}
+  .d365-summary{font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.5}
+  .d365-summary b{color:var(--text)}
+  .d365-meta{display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+  .d365-count{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--yellow)}
+  .d365-chevron{color:var(--text3);font-size:11px;transition:transform .2s;flex-shrink:0}
+  .d365-item.expanded .d365-chevron{transform:rotate(90deg)}
+  .d365-details{display:none;padding:0 14px 12px;border-top:1px solid rgba(244,63,94,.15)}
+  .d365-item.expanded .d365-details{display:block}
+  .d365-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-top:10px}
+  .d365-field{font-family:var(--mono);font-size:10px}
+  .d365-field-label{color:var(--text3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em;font-size:9px}
+  .d365-field-val{color:var(--text2);word-break:break-all;line-height:1.4}
+  .d365-field-val.highlight{color:var(--accent2)}
+  .d365-field-val.red{color:var(--red)}
+  .d365-recommendation{margin-top:10px;padding:8px 10px;background:rgba(14,165,233,.07);border:1px solid rgba(14,165,233,.18);border-radius:6px;font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7}
+  .d365-recommendation b{color:var(--accent2)}
+  .d365-recommendation code{background:rgba(14,165,233,.1);padding:1px 5px;border-radius:3px;color:var(--accent2);font-size:9px}
+  .d365-otc-badge{font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:3px;background:rgba(251,191,36,.12);color:var(--yellow);border:1px solid rgba(251,191,36,.25)}
+  @media(max-width:767px){.d365-grid{grid-template-columns:1fr}}
+  .modal-divider{height:1px;background:var(--border);margin:16px 0}
+  .io-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .io-label{font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+  .btn-sm{font-family:var(--mono);font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer;border:1px solid;transition:all .15s;touch-action:manipulation;white-space:nowrap}
+  .btn-export{background:transparent;border-color:var(--border2);color:var(--text2)}
+  .btn-export:hover{border-color:var(--accent);color:var(--accent2)}
+  .btn-import{background:transparent;border-color:var(--border2);color:var(--text2)}
+  .btn-import:hover{border-color:var(--green);color:var(--green)}
+  #importFileInput{display:none}
+
+  /* MAIN */
+  main{padding:16px;display:flex;flex-direction:column;gap:14px}
+
+  /* STATUS BAR */
+  .status-bar{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .status-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden;transition:border-color .2s}
+  .status-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+  .status-card.ok::before{background:var(--green)}
+  .status-card.warn::before{background:var(--yellow)}
+  .status-card.error::before{background:var(--red)}
+  .status-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .status-icon.ok{background:rgba(34,211,160,.12)}
+  .status-icon.warn{background:rgba(251,191,36,.12)}
+  .status-icon.error{background:rgba(244,63,94,.12)}
+  .status-info{flex:1;min-width:0}
+  .status-name{font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .status-value{font-size:20px;font-weight:600;font-family:var(--mono);line-height:1}
+  .status-value.ok{color:var(--green)}
+  .status-value.warn{color:var(--yellow)}
+  .status-value.error{color:var(--red)}
+  .status-sub{font-size:9px;color:var(--text3);margin-top:3px;font-family:var(--mono)}
+
+  /* PANELS */
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .panel-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .panel-title{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text2);letter-spacing:.04em;display:flex;align-items:center;gap:7px}
+  .panel-title .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+  .panel-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid;white-space:nowrap;flex-shrink:0}
+  .panel-badge.green{color:var(--green);border-color:rgba(34,211,160,.3);background:rgba(34,211,160,.06)}
+  .panel-badge.red{color:var(--red);border-color:rgba(244,63,94,.3);background:rgba(244,63,94,.06)}
+  .panel-badge.yellow{color:var(--yellow);border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.06)}
+  .panel-body{padding:14px 16px}
+  canvas{width:100% !important;display:block}
+
+  /* MINI STATS */
+  .mini-stats{display:flex;gap:0;border-top:1px solid var(--border)}
+  .mini-stat{flex:1;padding:10px 14px;border-right:1px solid var(--border)}
+  .mini-stat:last-child{border-right:none}
+  .mini-label{font-size:9px;color:var(--text3);font-family:var(--mono);margin-bottom:2px}
+  .mini-val{font-size:13px;font-weight:500;font-family:var(--mono);color:var(--text)}
+
+  /* GRIDS */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid-3{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+
+  /* FUNCTIONS */
+  .func-cards{display:flex;flex-direction:column;gap:0}
+  .func-card{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid rgba(26,58,92,.5);gap:10px}
+  .func-card:last-child{border-bottom:none}
+  .func-card-name{font-family:var(--mono);font-size:11px;color:var(--accent2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+  .func-card-type{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px}
+  .func-card-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+  .func-stat{text-align:right}
+  .func-stat-v{font-family:var(--mono);font-size:12px;color:var(--text2)}
+  .func-stat-l{font-family:var(--mono);font-size:9px;color:var(--text3)}
+  .func-pct{font-family:var(--mono);font-size:12px;font-weight:600}
+  .func-table-wrap{display:none}
+  .func-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+  .func-table th{text-align:left;color:var(--text3);font-weight:400;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:0 12px 10px;border-bottom:1px solid var(--border)}
+  .func-table td{padding:10px 12px;border-bottom:1px solid rgba(26,58,92,.5)}
+  .func-table tr:last-child td{border-bottom:none}
+  .func-table tr:hover td{background:rgba(14,165,233,.04)}
+  .func-name{color:var(--accent2)}
+  .func-type{font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(14,165,233,.1);color:var(--text3);border:1px solid var(--border)}
+  .ok-text{color:var(--green)}.warn-text{color:var(--yellow)}.err-text{color:var(--red)}
+  .bar-mini{display:flex;align-items:center;gap:8px}
+  .bar-track{flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:2px;transition:width .6s ease}
+
+  /* ADF */
+  .adf-run{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(26,58,92,.5);font-family:var(--mono);font-size:11px;gap:8px}
+  .adf-run:last-child{border-bottom:none}
+  .adf-pipeline{color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .adf-meta{display:flex;gap:10px;align-items:center;flex-shrink:0}
+  .adf-dur{color:var(--text3);font-size:10px}
+  .badge{font-size:9px;padding:2px 7px;border-radius:10px;font-weight:500;letter-spacing:.04em}
+  .badge-ok{background:rgba(34,211,160,.15);color:var(--green)}
+  .badge-fail{background:rgba(244,63,94,.15);color:var(--red)}
+  .badge-run{background:rgba(14,165,233,.15);color:var(--accent2)}
+
+  /* AVAIL */
+  .avail-blocks{display:flex;gap:3px;flex-wrap:wrap;padding:4px 0 12px}
+  .avail-block{height:28px;border-radius:3px;cursor:pointer;flex:1;min-width:10px;max-width:20px}
+  .avail-block.up{background:var(--green)}.avail-block.down{background:var(--red)}.avail-block.partial{background:var(--yellow)}
+  .avail-legend{display:flex;gap:14px;font-family:var(--mono);font-size:10px;color:var(--text3)}
+
+  /* LOGS */
+  .log-entry{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid rgba(26,58,92,.3);font-family:var(--mono);font-size:11px;line-height:1.5}
+  .log-entry:last-child{border-bottom:none}
+  .log-time{color:var(--text3);flex-shrink:0;width:44px;font-size:10px}
+  .log-level{flex-shrink:0;width:44px;font-size:9px;padding:2px 4px;border-radius:3px;text-align:center;font-weight:600;letter-spacing:.04em}
+  .log-level.err{background:rgba(244,63,94,.2);color:var(--red)}
+  .log-level.warn{background:rgba(251,191,36,.2);color:var(--yellow)}
+  .log-level.info{background:rgba(14,165,233,.15);color:var(--accent2)}
+  .log-level.trace{background:rgba(167,139,250,.15);color:var(--purple)}
+  .log-msg{color:var(--text2);flex:1;word-break:break-word}
+  .log-src{color:var(--text3);font-size:9px;flex-shrink:0;display:none}
+  .log-filter-sel{background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:4px;outline:none}
+
+  /* EXCEPTIONS */
+  .exc-item{padding:10px 0;border-bottom:1px solid rgba(26,58,92,.5);font-family:var(--mono);font-size:11px}
+  .exc-item:last-child{border-bottom:none}
+  .exc-name{color:var(--red);margin-bottom:4px;word-break:break-word}
+  .exc-count{float:right;font-size:10px;color:var(--yellow)}
+  .exc-detail{color:var(--text3);font-size:10px;line-height:1.6}
+
+  /* DATA SOURCE BANNER */
+  .data-banner{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:10px 16px;border-radius:10px;border:1px solid;font-family:var(--mono);font-size:11px;
+    flex-wrap:wrap;
+  }
+  .data-banner.demo{background:rgba(74,122,155,.06);border-color:var(--border);color:var(--text3)}
+  .data-banner.live{background:rgba(34,211,160,.05);border-color:rgba(34,211,160,.25);color:var(--green)}
+  .data-banner.error{background:rgba(244,63,94,.06);border-color:rgba(244,63,94,.25);color:var(--red)}
+  .data-banner.loading{background:rgba(14,165,233,.05);border-color:rgba(14,165,233,.2);color:var(--accent2)}
+  .banner-left{display:flex;align-items:center;gap:8px}
+  .banner-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{font-family:var(--mono);font-size:10px;padding:5px 12px;border-radius:5px;cursor:pointer;border:1px solid;transition:all .15s;touch-action:manipulation;white-space:nowrap}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn-primary:hover{background:var(--accent2);border-color:var(--accent2)}
+  .btn-ghost{background:transparent;border-color:var(--border2);color:var(--text2)}
+  .btn-ghost:hover{border-color:var(--text3);color:var(--text)}
+  .btn-danger{background:transparent;border-color:rgba(244,63,94,.4);color:var(--red)}
+  .btn-danger:hover{background:rgba(244,63,94,.1)}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(5,13,26,.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);animation:fadeOverlay .2s ease}
+  @keyframes fadeOverlay{from{opacity:0}to{opacity:1}}
+  .modal-overlay.hidden{display:none}
+  .modal{background:var(--panel);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:480px;overflow:hidden;animation:slideModal .25s ease}
+  @keyframes slideModal{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .modal-title{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text)}
+  .modal-subtitle{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px}
+  .modal-close{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:2px;flex-shrink:0}
+  .modal-close:hover{color:var(--text)}
+  .modal-body{padding:20px 24px}
+  .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+
+  .field{margin-bottom:16px}
+  .field:last-child{margin-bottom:0}
+  .field-label{font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:6px;display:block;letter-spacing:.04em;text-transform:uppercase}
+  .field-input{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:12px;padding:10px 12px;border-radius:7px;outline:none;transition:border-color .2s}
+  .field-input:focus{border-color:var(--accent)}
+  .field-hint{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:5px;line-height:1.5}
+  .field-hint a{color:var(--accent2);text-decoration:none}
+  .field-hint a:hover{text-decoration:underline}
+
+  .env-tabs{display:flex;gap:4px;margin-bottom:20px}
+  .env-tab{flex:1;padding:7px 4px;border-radius:6px;border:1px solid var(--border);background:transparent;font-family:var(--mono);font-size:10px;color:var(--text3);cursor:pointer;text-align:center;transition:all .15s;position:relative}
+  .env-tab:hover{border-color:var(--border2);color:var(--text2)}
+  .env-tab.active{border-color:var(--env-tab-color,var(--accent));color:var(--env-tab-color,var(--accent));background:rgba(0,0,0,.15)}
+  .env-tab[data-env="dev"].active{--env-tab-color:#a78bfa}
+  .env-tab[data-env="sit"].active{--env-tab-color:#38bdf8}
+  .env-tab[data-env="uat"].active{--env-tab-color:#fbbf24}
+  .env-tab[data-env="prod"].active{--env-tab-color:#22d3a0}
+  .env-tab .tab-check{position:absolute;top:3px;right:4px;font-size:8px;color:var(--green)}
+
+  .modal-info{background:rgba(14,165,233,.07);border:1px solid rgba(14,165,233,.15);border-radius:7px;padding:10px 12px;font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7;margin-bottom:16px}
+  .modal-info b{color:var(--accent2)}
+
+  /* SOURCE TABS — App Insights vs Log Analytics */
+  .src-tabs{display:flex;gap:4px;margin-bottom:16px}
+  .src-tab{flex:1;padding:7px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;font-family:var(--mono);font-size:10px;color:var(--text3);cursor:pointer;text-align:center;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px}
+  .src-tab:hover{border-color:var(--border2);color:var(--text2)}
+  .src-tab.active{border-color:var(--accent);color:var(--accent2);background:rgba(14,165,233,.07)}
+  .src-tab .src-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+  .src-tab[data-src="ai"] .src-dot{background:var(--accent2)}
+  .src-tab[data-src="la"] .src-dot{background:var(--orange)}
+  .src-tab[data-src="la"].active{border-color:var(--orange);color:var(--orange);background:rgba(251,146,60,.07)}
+
+  /* LOADING SPINNER */
+  .spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(14,165,233,.3);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* REFRESH BUTTON */
+  .refresh-btn{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;width:30px;height:30px;transition:all .2s;flex-shrink:0;touch-action:manipulation}
+  .refresh-btn:hover{border-color:var(--accent);color:var(--accent2);background:var(--panel2)}
+  .refresh-btn:disabled{opacity:.4;cursor:not-allowed}
+  .refresh-btn svg{width:14px;height:14px;transition:transform .6s ease}
+  .refresh-btn.spinning svg{animation:spin-icon .7s linear infinite}
+  @keyframes spin-icon{to{transform:rotate(360deg)}}
+
+  /* COUNTDOWN PROGRESS BAR */
+  .refresh-progress{position:fixed;top:calc(var(--header-h) + var(--env-h));left:0;right:0;height:2px;z-index:180;background:transparent;pointer-events:none}
+  .refresh-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:100%;transition:none;transform-origin:left;opacity:.6}
+  .refresh-progress.animating .refresh-progress-fill{transition:width 30s linear;width:0%}
+
+  /* SKELETON LOADER */
+  .skeleton{border-radius:4px;background:linear-gradient(90deg,var(--panel) 25%,var(--panel2) 50%,var(--panel) 75%);background-size:200% 100%;animation:skeleton-wave 1.4s ease infinite}
+  @keyframes skeleton-wave{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .skeleton-line{height:12px;margin-bottom:8px}
+  .skeleton-line:last-child{margin-bottom:0;width:60%}
+  .skeleton-card{height:70px;border-radius:8px;border:1px solid var(--border)}
+  .skeleton-chart{height:90px;border-radius:4px}
+  .skeleton-row{height:40px;border-radius:4px;margin-bottom:6px}
+  .skeleton-row:last-child{margin-bottom:0}
+
+  /* ENV SWITCHING OVERLAY — subtle flash na panelach */
+  .panel.env-loading{opacity:.5;pointer-events:none;transition:opacity .2s}
+  .panel.env-ready{opacity:1;transition:opacity .3s}
+  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .panel{animation:fadeIn .35s ease both}
+
+  /* DESKTOP */
+  @media(min-width:768px){
+    :root{--header-h:60px;--env-h:48px}
+    header{padding:0 28px}
+    .header-title .sub{display:inline}
+    .header-right{gap:16px}
+    .time-btn{font-size:11px;padding:4px 10px}
+    .last-update{display:block}
+    .version-badge{display:inline-block}
+    .refresh-indicator{font-size:11px}
+    .env-bar{padding:0 28px;gap:8px}
+    .env-label{font-size:11px}
+    .env-btn{font-size:12px;padding:7px 16px}
+    main{padding:24px 28px;gap:20px}
+    .data-banner{flex-wrap:nowrap;padding:12px 20px;font-size:12px}
+    .status-bar{grid-template-columns:repeat(4,1fr);gap:12px}
+    .status-card{padding:16px 20px;gap:14px}
+    .status-value{font-size:22px}
+    .panel-header{padding:14px 20px}
+    .panel-title{font-size:12px}
+    .panel-body{padding:16px 20px}
+    .mini-stat{padding:12px 20px}
+    .mini-val{font-size:14px}
+    .mini-label{font-size:10px}
+    .func-cards{display:none}
+    .func-table-wrap{display:block}
+    .adf-run{padding:11px 20px;font-size:12px}
+    .log-src{display:block}
+    .log-time{width:60px;font-size:11px}
+    .log-level{width:50px}
+    .avail-block{min-width:14px}
+    .exc-item{font-size:12px}
+  }
+  @media(max-width:767px){
+    .grid-2,.grid-3{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <div class="azure-logo">☁</div>
+    <div class="header-title">
+      Azure Monitor<span class="sep sub">/</span><span class="sub">Application Insights</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="time-range">
+      <button class="time-btn" onclick="setRange(1)">1h</button>
+      <button class="time-btn active" onclick="setRange(6)">6h</button>
+      <button class="time-btn" onclick="setRange(24)">24h</button>
+      <button class="time-btn" onclick="setRange(72)">3d</button>
+    </div>
+    <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()" title="Odśwież teraz">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13.5 2.5A6.5 6.5 0 1 1 8 1.5"/>
+        <polyline points="11 1 13.5 2.5 11.5 5"/>
+      </svg>
+    </button>
+    <div class="refresh-indicator"><div class="pulse-dot"></div><span id="countdownLabel">30s</span></div>
+    <a class="version-badge" id="versionBadge" title="Build: __FULL_VERSION__ · SHA: __SHA__ · __BRANCH__" href="https://github.com/__GITHUB_REPO__/releases" target="_blank" rel="noopener">
+      v<span class="vb-tag">__VERSION__</span>
+    </a>
+    <div class="last-update" id="lastUpdate">—</div>
+  </div>
+</header>
+
+<!-- REFRESH PROGRESS BAR -->
+<div class="refresh-progress" id="refreshProgress">
+  <div class="refresh-progress-fill" id="refreshProgressFill"></div>
+</div>
+
+<!-- ENV BAR -->
+<div class="env-bar">
+  <span class="env-label">ENV:</span>
+  <button class="env-btn" data-env="dev" onclick="setEnv('dev')"><span class="env-dot"></span>DEV<span class="env-key-icon" id="keyIcon_dev">🔑</span></button>
+  <button class="env-btn" data-env="sit" onclick="setEnv('sit')"><span class="env-dot"></span>SIT<span class="env-key-icon" id="keyIcon_sit">🔑</span></button>
+  <button class="env-btn" data-env="uat" onclick="setEnv('uat')"><span class="env-dot"></span>UAT<span class="env-key-icon" id="keyIcon_uat">🔑</span></button>
+  <button class="env-btn active" data-env="prod" onclick="setEnv('prod')"><span class="env-dot"></span>PROD<span class="env-key-icon" id="keyIcon_prod">🔑</span></button>
+  <div class="env-sep"></div>
+  <button class="demo-btn" id="demoBtn" onclick="toggleDemo()" title="Tryb demonstracyjny — pokazuje przykładowe dane zamiast pustych widgetów">
+    <span class="demo-dot"></span>DEMO
+  </button>
+  <div class="env-sep"></div>
+  <span class="tz-label">🕐</span>
+  <select class="tz-select" id="tzSelect" onchange="onTzChange()" title="Strefa czasowa wyświetlanych danych"></select>
+  <div class="env-status-chip demo" id="envChip">● DEMO</div>
+</div>
+
+<main id="mainContent">
+
+  <!-- DATA SOURCE BANNER -->
+  <div class="data-banner demo" id="dataBanner">
+    <div class="banner-left" id="bannerText">⚠️ Brak kluczy — dane demonstracyjne</div>
+    <div class="banner-actions">
+      <button class="btn btn-primary" onclick="openModal()">🔑 Skonfiguruj klucze</button>
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar" id="statusBar"></div>
+
+  <!-- CHARTS -->
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><div class="dot" style="background:var(--accent)"></div>Wywołania / min</div>
+        <div class="panel-badge green" id="reqBadge">—</div>
+      </div>
+      <div class="panel-body"><canvas id="reqChart" height="90"></canvas></div>
+      <div class="mini-stats">
+        <div class="mini-stat"><div class="mini-label">Łącznie</div><div class="mini-val" id="reqTotal">—</div></div>
+        <div class="mini-stat"><div class="mini-label">Szczyt/min</div><div class="mini-val" id="reqPeak">—</div></div>
+        <div class="mini-stat"><div class="mini-label">Błędy%</div><div class="mini-val err-text" id="reqErrPct">—</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><div class="dot" style="background:var(--purple)"></div>Latency (ms)</div>
+        <div class="panel-badge green" id="latBadge">p95: —</div>
+      </div>
+      <div class="panel-body"><canvas id="latChart" height="90"></canvas></div>
+      <div class="mini-stats">
+        <div class="mini-stat"><div class="mini-label">p50</div><div class="mini-val" id="latP50">—</div></div>
+        <div class="mini-stat"><div class="mini-label">p95</div><div class="mini-val" id="latP95">—</div></div>
+        <div class="mini-stat"><div class="mini-label">p99</div><div class="mini-val warn-text" id="latP99">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FUNCTIONS + EXCEPTIONS -->
+  <div class="grid-3">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><div class="dot" style="background:var(--accent2)"></div>Functions & Web API</div>
+      </div>
+      <div class="func-cards" id="funcCards"></div>
+      <div class="func-table-wrap">
+        <table class="func-table">
+          <thead><tr><th>Nazwa</th><th>Typ</th><th>Wywołań/h</th><th>Avg ms</th><th>Błędy</th><th>Success rate</th></tr></thead>
+          <tbody id="funcBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><div class="dot" style="background:var(--red)"></div>Wyjątki</div>
+        <div class="panel-badge red" id="excTotal">—</div>
+      </div>
+      <div class="panel-body" id="excBody"></div>
+    </div>
+  </div>
+
+  <!-- ADF + AVAILABILITY -->
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><div class="dot" style="background:var(--orange)"></div>ADF — Pipeline Runs</div>
+        <div class="panel-badge green" id="adfBadge">—</div>
+      </div>
+      <div id="adfBody"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><div class="dot" style="background:var(--green)"></div>Availability (30min slots)</div>
+        <div class="panel-badge green" id="availBadge">—</div>
+      </div>
+      <div class="panel-body">
+        <div class="avail-blocks" id="availBlocks"></div>
+        <div class="avail-legend">
+          <span><span style="color:var(--green)">■</span> Up</span>
+          <span><span style="color:var(--yellow)">■</span> Degraded</span>
+          <span><span style="color:var(--red)">■</span> Down</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGS -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title"><div class="dot" style="background:var(--purple)"></div>Logi / Traces</div>
+      <select id="logFilter" onchange="renderLogs()" class="log-filter-sel">
+        <option value="">Wszystkie</option>
+        <option value="Error">Error</option>
+        <option value="Warning">Warning</option>
+        <option value="Information">Info</option>
+        <option value="Trace">Trace</option>
+      </select>
+    </div>
+    <div class="panel-body" style="padding:8px 16px" id="logsBody"></div>
+  </div>
+
+  <!-- D365 PRIVILEGE ERRORS -->
+  <div class="panel" id="d365Panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <div class="dot" style="background:var(--red)"></div>
+        Dynamics 365 — Błędy uprawnień
+        <span style="font-size:9px;color:var(--text3);font-weight:400">(-2147220960)</span>
+      </div>
+      <div class="panel-badge red" id="d365Badge">—</div>
+    </div>
+    <div id="d365Body">
+      <div class="panel-body">
+        <div class="empty-state">
+          <div class="empty-icon">🔒</div>
+          <div class="empty-title">Brak błędów uprawnień D365</div>
+          <div class="empty-sub">Błędy typu -2147220960 (missing privilege)<br>pojawią się tutaj w postaci zrozumiałej dla konsultanta</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══ MODAL ══════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modalOverlay" onclick="overlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">🔑 Klucze Application Insights</div>
+        <div class="modal-subtitle">Zapisywane tylko w localStorage Twojej przeglądarki</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-info">
+        Klucze <b>nigdy nie opuszczają przeglądarki</b> — fetch idzie bezpośrednio do API Azure.<br>
+        <b>App Insights</b>: Portal → App Insights → Configure → <b>API Access</b><br>
+        <b>Log Analytics</b>: Portal → Log Analytics workspace → <b>Agents → Workspace ID + Key</b>
+      </div>
+
+      <!-- ENV TABS -->
+      <div class="env-tabs">
+        <button class="env-tab active" data-env="dev" onclick="switchModalEnv('dev')">DEV<span class="tab-check" id="tc_dev"></span></button>
+        <button class="env-tab" data-env="sit" onclick="switchModalEnv('sit')">SIT<span class="tab-check" id="tc_sit"></span></button>
+        <button class="env-tab" data-env="uat" onclick="switchModalEnv('uat')">UAT<span class="tab-check" id="tc_uat"></span></button>
+        <button class="env-tab" data-env="prod" onclick="switchModalEnv('prod')">PROD<span class="tab-check" id="tc_prod"></span></button>
+      </div>
+
+      <!-- SOURCE TABS — AI vs LA -->
+      <div class="src-tabs">
+        <button class="src-tab active" data-src="ai" onclick="switchModalSrc('ai')">
+          <span class="src-dot"></span>Application Insights
+        </button>
+        <button class="src-tab" data-src="la" onclick="switchModalSrc('la')">
+          <span class="src-dot"></span>Log Analytics (ADF)
+        </button>
+      </div>
+
+      <!-- APP INSIGHTS FIELDS -->
+      <div id="srcPanel_ai">
+        <div class="field">
+          <label class="field-label">Application ID</label>
+          <input class="field-input" id="m_appId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+          <div class="field-hint">Portal → App Insights → Configure → API Access → Application ID</div>
+        </div>
+        <div class="field">
+          <label class="field-label">API Key</label>
+          <input class="field-input" id="m_apiKey" type="password" placeholder="••••••••••••••••••••" />
+          <div class="field-hint">Utwórz klucz z uprawnieniem <b>Read telemetry</b>. Klucz widać tylko raz po utworzeniu.</div>
+        </div>
+      </div>
+
+      <!-- LOG ANALYTICS FIELDS -->
+      <div id="srcPanel_la" style="display:none">
+        <div class="field">
+          <label class="field-label">Workspace ID</label>
+          <input class="field-input" id="m_laWorkspaceId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+          <div class="field-hint">Portal → Log Analytics workspace → Overview → Workspace ID</div>
+        </div>
+        <div class="field">
+          <label class="field-label">API Key (Primary key)</label>
+          <input class="field-input" id="m_laApiKey" type="password" placeholder="••••••••••••••••••••" />
+          <div class="field-hint">Portal → Log Analytics workspace → Agents → <b>Primary key</b><br>Używane do zapytań przez <b>api.loganalytics.io</b></div>
+        </div>
+        <div style="padding:8px 10px;background:rgba(251,146,60,.07);border:1px solid rgba(251,146,60,.2);border-radius:6px;font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7;margin-top:4px">
+          <b style="color:var(--orange)">ℹ ADF Diagnostic Settings</b><br>
+          W ADF Studio → Manage → (Azure Portal) → Twój Data Factory →<br>
+          Monitoring → <b>Diagnostic settings</b> → + Add →<br>
+          zaznacz <b>PipelineRuns, ActivityRuns, TriggerRuns</b> →<br>
+          destination: <b>Send to Log Analytics workspace</b>
+        </div>
+      </div>
+
+      <div class="modal-divider"></div>
+
+      <div class="io-row">
+        <span class="io-label">Backup:</span>
+        <button class="btn-sm btn-export" onclick="exportKeys()" title="Pobierz plik JSON ze wszystkimi skonfigurowanymi kluczami">⬇ Eksportuj klucze (JSON)</button>
+        <button class="btn-sm btn-import" onclick="document.getElementById('importFileInput').click()" title="Wczytaj plik JSON z kluczami">⬆ Importuj z pliku</button>
+        <input type="file" id="importFileInput" accept=".json,application/json" onchange="importKeys(event)" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="clearCurrentEnvKey()">Usuń klucz</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Anuluj</button>
+      <button class="btn btn-primary" onclick="saveKey()">Zapisz i przetestuj</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// SECURITY — HTML sanitization
+// Wszystkie dane z zewnętrznych źródeł (API, localStorage)
+// muszą przejść przez esc() przed wstawieniem do innerHTML
+// ══════════════════════════════════════════════════════════════════
+function esc(str) {
+  if (str === null || str === undefined) return '—';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/`/g, '&#x60;');
+}
+// Skraca długie stringi i sanityzuje
+function escTrunc(str, max = 120) {
+  const s = esc(str);
+  return s.length > max ? s.slice(0, max) + '…' : s;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════════════
+const ENV_CONFIG = {
+  dev:  { label:'DEV',  health:'ok',   healthText:'Healthy',  trafficMult:.15, latencyMult:1.8, errMult:4.0, adfFailRate:.4  },
+  sit:  { label:'SIT',  health:'ok',   healthText:'Healthy',  trafficMult:.30, latencyMult:1.4, errMult:2.0, adfFailRate:.25 },
+  uat:  { label:'UAT',  health:'warn', healthText:'Degraded', trafficMult:.50, latencyMult:1.2, errMult:1.5, adfFailRate:.20 },
+  prod: { label:'PROD', health:'ok',   healthText:'Healthy',  trafficMult:1.0, latencyMult:1.0, errMult:1.0, adfFailRate:.10 },
+};
+const LS_KEY = 'az_monitor_keys';
+// Struktura: { dev: { appId, apiKey, laWorkspaceId, laApiKey }, sit: {...}, ... }
+const LS_DEMO = 'az_monitor_demo';
+
+let currentEnv = 'prod';
+let currentRange = 6;
+let reqData = [], latData = [], labels = [], logs = [];
+let modalEnv = 'dev';
+let modalSrc = 'ai'; // 'ai' | 'la'
+let demoMode = localStorage.getItem(LS_DEMO) !== 'false';
+
+// ══════════════════════════════════════════════════════════════════
+// TIMEZONE
+// ══════════════════════════════════════════════════════════════════
+const LS_TZ = 'az_monitor_tz';
+
+// Popularne strefy czasowe — lokalnie + kilka globalnych
+const TZ_OPTIONS = [
+  { value: 'local',                    label: 'Lokalna przeglądarki' },
+  { value: 'UTC',                      label: 'UTC' },
+  { value: 'Europe/Warsaw',            label: 'Europa/Warszawa (CET/CEST)' },
+  { value: 'Europe/London',            label: 'Europa/Londyn (GMT/BST)' },
+  { value: 'Europe/Berlin',            label: 'Europa/Berlin (CET/CEST)' },
+  { value: 'Europe/Paris',             label: 'Europa/Paryż (CET/CEST)' },
+  { value: 'Europe/Amsterdam',         label: 'Europa/Amsterdam' },
+  { value: 'Europe/Zurich',            label: 'Europa/Zurych' },
+  { value: 'Europe/Istanbul',          label: 'Europa/Stambuł (TRT)' },
+  { value: 'Europe/Moscow',            label: 'Europa/Moskwa (MSK)' },
+  { value: 'America/New_York',         label: 'Ameryka/Nowy Jork (EST/EDT)' },
+  { value: 'America/Chicago',          label: 'Ameryka/Chicago (CST/CDT)' },
+  { value: 'America/Denver',           label: 'Ameryka/Denver (MST/MDT)' },
+  { value: 'America/Los_Angeles',      label: 'Ameryka/Los Angeles (PST/PDT)' },
+  { value: 'Asia/Dubai',               label: 'Azja/Dubaj (GST)' },
+  { value: 'Asia/Kolkata',             label: 'Azja/Kalkuta (IST)' },
+  { value: 'Asia/Singapore',           label: 'Azja/Singapur (SGT)' },
+  { value: 'Asia/Tokyo',               label: 'Azja/Tokio (JST)' },
+  { value: 'Australia/Sydney',         label: 'Australia/Sydney (AEST/AEDT)' },
+];
+
+let currentTz = localStorage.getItem(LS_TZ) || 'local';
+
+function initTzSelect() {
+  const sel = document.getElementById('tzSelect');
+  if (!sel) return;
+  sel.innerHTML = TZ_OPTIONS.map(tz =>
+    `<option value="${tz.value}"${tz.value === currentTz ? ' selected' : ''}>${tz.label}</option>`
+  ).join('');
+}
+
+function onTzChange() {
+  currentTz = document.getElementById('tzSelect').value;
+  localStorage.setItem(LS_TZ, currentTz);
+  // Przerysuj tylko elementy zależne od czasu (bez ponownego fetchu)
+  rerenderTimeOnly();
+}
+
+// Formatuje Date lub string ISO → "HH:MM" w wybranej strefie
+function formatTime(dateOrStr) {
+  if (!dateOrStr) return '—';
+  const d = (dateOrStr instanceof Date) ? dateOrStr : new Date(dateOrStr);
+  if (isNaN(d)) return '—';
+  if (currentTz === 'local') {
+    return d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  }
+  return d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', timeZone: currentTz });
+}
+
+// Formatuje "HH:MM" z Date lub ISO string
+function formatHHMM(dateOrStr) {
+  return formatTime(dateOrStr);
+}
+
+// Formatuje "HH:MM:SS"
+function formatHHMMSS(dateOrStr) {
+  if (!dateOrStr) return '—';
+  const d = (dateOrStr instanceof Date) ? dateOrStr : new Date(dateOrStr);
+  if (isNaN(d)) return '—';
+  if (currentTz === 'local') {
+    return d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+  return d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: currentTz });
+}
+
+// Skrócona nazwa bieżącej strefy do wyświetlenia (np. "CET", "UTC+2")
+function tzAbbr() {
+  if (currentTz === 'local') {
+    // Wyciągnij skrót z toTimeString np. "GMT+0200 (Central European Standard Time)"
+    const m = new Date().toTimeString().match(/\((.+?)\)/);
+    if (m) {
+      // Skróć do inicjałów: "Central European Summer Time" → "CEST"
+      const words = m[1].split(' ');
+      return words.length > 1 ? words.map(w => w[0]).join('') : m[1];
+    }
+    return 'LOCAL';
+  }
+  // Pobierz skrót IANA
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: currentTz, timeZoneName: 'short' })
+      .formatToParts(new Date());
+    return parts.find(p => p.type === 'timeZoneName')?.value || currentTz;
+  } catch { return currentTz; }
+}
+
+// Przerysuj tylko elementy z czasem — bez ponownego API fetch
+function rerenderTimeOnly() {
+  // Wykresy — tylko labelki osi X
+  initCharts();
+  // lastUpdate
+  const lu = document.getElementById('lastUpdate');
+  if (lu && lu._lastDate) lu.textContent = 'odświeżono: ' + formatHHMMSS(lu._lastDate);
+  // Logi — renderuj ponownie z tym samym zbiorem
+  renderLogs();
+} // domyślnie true przy pierwszym wejściu
+
+// ══════════════════════════════════════════════════════════════════
+// LOCALSTORAGE — key management
+// ══════════════════════════════════════════════════════════════════
+function loadKeys() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; }
+}
+function saveKeys(keys) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(keys)); } catch(e) { alert('Błąd zapisu localStorage: ' + e.message); }
+}
+function getEnvKey(env)  { return loadKeys()[env] || null; }
+function hasKey(env)     { const k = getEnvKey(env); return !!(k && k.appId && k.apiKey); }
+function getLaKey(env)   { return loadKeys()[env] || null; }
+function hasLaKey(env)   { const k = getLaKey(env); return !!(k && k.laWorkspaceId && k.laApiKey); }
+
+function updateKeyIcons() {
+  ['dev','sit','uat','prod'].forEach(env => {
+    const el  = document.getElementById('keyIcon_' + env);
+    const btn = document.querySelector(`.env-btn[data-env="${env}"]`);
+    const ai  = hasKey(env);
+    const la  = hasLaKey(env);
+    if (ai && la) {
+      el.textContent = '✓✓'; el.style.color = 'var(--green)'; el.title = 'App Insights + Log Analytics';
+      btn.classList.add('env-configured');
+    } else if (ai || la) {
+      el.textContent = '✓'; el.style.color = 'var(--yellow)'; el.title = ai ? 'App Insights OK, brak Log Analytics' : 'Log Analytics OK, brak App Insights';
+      btn.classList.add('env-configured');
+    } else {
+      el.textContent = '🔑'; el.style.color = ''; el.title = '';
+      btn.classList.remove('env-configured');
+    }
+  });
+  ['dev','sit','uat','prod'].forEach(env => {
+    const tc = document.getElementById('tc_' + env);
+    if (tc) tc.textContent = (hasKey(env) || hasLaKey(env)) ? '✓' : '';
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// EXPORT / IMPORT KEYS
+// ══════════════════════════════════════════════════════════════════
+function exportKeys() {
+  const keys = loadKeys();
+  const configured = Object.keys(keys).filter(e => keys[e]?.appId || keys[e]?.laWorkspaceId);
+  if (configured.length === 0) { alert('Brak skonfigurowanych kluczy do eksportu.'); return; }
+  const payload = {
+    _meta: { exported: new Date().toISOString(), tool: 'Azure Monitor Dashboard',
+      warning: 'Ten plik zawiera klucze API. Przechowuj bezpiecznie — nie commituj do repozytorium.' },
+    keys
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `az-monitor-keys-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importKeys(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const incoming = parsed.keys || parsed;
+      const envs = ['dev','sit','uat','prod'];
+      const valid = envs.filter(env =>
+        (incoming[env]?.appId && incoming[env]?.apiKey) ||
+        (incoming[env]?.laWorkspaceId && incoming[env]?.laApiKey)
+      );
+      if (valid.length === 0) {
+        alert('❌ Nieprawidłowy format pliku lub brak kluczy dla znanych środowisk (dev/sit/uat/prod).');
+        return;
+      }
+      if (!confirm(`Znaleziono klucze dla: ${valid.map(e => e.toUpperCase()).join(', ')}.\n\nZastąpić obecne klucze?`)) return;
+      const current = loadKeys();
+      valid.forEach(env => {
+        if (!current[env]) current[env] = {};
+        if (incoming[env].appId)        current[env].appId        = incoming[env].appId;
+        if (incoming[env].apiKey)        current[env].apiKey        = incoming[env].apiKey;
+        if (incoming[env].laWorkspaceId) current[env].laWorkspaceId = incoming[env].laWorkspaceId;
+        if (incoming[env].laApiKey)      current[env].laApiKey      = incoming[env].laApiKey;
+      });
+      saveKeys(current);
+      updateKeyIcons();
+      updateDemoBtn();
+      switchModalEnv(modalEnv);
+      alert(`✅ Zaimportowano klucze dla: ${valid.map(e => e.toUpperCase()).join(', ')}.`);
+      if (valid.includes(currentEnv)) { stopCountdown(); fullRefresh().then(() => startCountdown()); }
+    } catch(err) { alert('❌ Błąd parsowania pliku JSON:\n' + err.message); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// DEMO MODE TOGGLE
+// ══════════════════════════════════════════════════════════════════
+function toggleDemo() {
+  demoMode = !demoMode;
+  localStorage.setItem(LS_DEMO, demoMode ? 'true' : 'false');
+  updateDemoBtn();
+  stopCountdown();
+  fullRefresh().then(() => startCountdown());
+}
+
+function updateDemoBtn() {
+  const btn = document.getElementById('demoBtn');
+  if (!btn) return;
+  const keyPresent = hasKey(currentEnv) || hasLaKey(currentEnv);
+
+  if (keyPresent) {
+    // Środowisko ma klucz → DEMO bez sensu, wyłącz i wyszarz
+    btn.disabled = true;
+    btn.classList.remove('active');
+    btn.style.opacity = '0.3';
+    btn.style.cursor = 'not-allowed';
+    btn.title = `Środowisko ${currentEnv.toUpperCase()} ma skonfigurowany klucz — dane LIVE zastępują DEMO`;
+  } else {
+    // Brak klucza → DEMO dostępne normalnie
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.cursor = '';
+    btn.classList.toggle('active', demoMode);
+    btn.title = demoMode
+      ? 'Tryb DEMO aktywny — kliknij aby wyłączyć i pokazywać puste widgety bez kluczy'
+      : 'Tryb DEMO wyłączony — bez kluczy widgety będą puste. Kliknij aby włączyć dane demonstracyjne';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// EMPTY STATE RENDER
+// ══════════════════════════════════════════════════════════════════
+function renderEmpty() {
+  reqData = []; latData = []; labels = [];
+
+  // Status cards — puste
+  document.getElementById('statusBar').innerHTML = ['Availability','Avg Latency','Błędy','Requests'].map(label => `
+    <div class="status-card ok">
+      <div class="status-info">
+        <div class="status-name">${label}</div>
+        <div class="status-value" style="color:var(--text3);font-size:16px">—</div>
+        <div class="status-sub">brak danych</div>
+      </div>
+    </div>`).join('');
+
+  // Wyczyść wykresy
+  ['reqChart','latChart'].forEach(id => {
+    const c = document.getElementById(id);
+    if (c) { const ctx = c.getContext('2d'); c.width = c.offsetWidth * devicePixelRatio; c.height = 90 * devicePixelRatio; c.style.height = '90px'; ctx.clearRect(0,0,c.width,c.height); }
+  });
+  ['reqTotal','reqPeak','reqErrPct','latP50','latP95','latP99'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.textContent = '—';
+  });
+  document.getElementById('latBadge').textContent = 'p95: —';
+  document.getElementById('reqBadge').textContent = '—';
+
+  // Functions — empty state
+  const emptyHtml = `<div class="empty-state"><div class="empty-icon">🔌</div><div class="empty-title">Brak danych</div><div class="empty-sub">Skonfiguruj klucze App Insights<br>lub włącz tryb DEMO</div></div>`;
+  document.getElementById('funcCards').innerHTML = emptyHtml;
+  document.getElementById('funcBody').innerHTML = '';
+
+  // Exceptions
+  document.getElementById('excTotal').textContent = '—';
+  document.getElementById('excBody').innerHTML = emptyHtml;
+
+  // ADF
+  document.getElementById('adfBadge').textContent = '—';
+  document.getElementById('adfBody').innerHTML = emptyHtml;
+
+  // Availability
+  document.getElementById('availBadge').textContent = '—';
+  document.getElementById('availBlocks').innerHTML = Array.from({length:12}, () =>
+    `<div class="avail-block" style="background:var(--border)"></div>`).join('');
+
+  // Logs
+  document.getElementById('logsBody').innerHTML = emptyHtml;
+
+  // D365
+  renderD365Errors([]);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════════════════════════
+function openModal() {
+  switchModalEnv(currentEnv);
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.add('hidden');
+}
+function overlayClick(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+function switchModalSrc(src) {
+  modalSrc = src;
+  document.querySelectorAll('.src-tab').forEach(t => t.classList.toggle('active', t.dataset.src === src));
+  document.getElementById('srcPanel_ai').style.display = src === 'ai' ? '' : 'none';
+  document.getElementById('srcPanel_la').style.display = src === 'la' ? '' : 'none';
+}
+
+function switchModalEnv(env) {
+  modalEnv = env;
+  document.querySelectorAll('.env-tab').forEach(t => t.classList.toggle('active', t.dataset.env === env));
+  const k = getEnvKey(env);
+  document.getElementById('m_appId').value        = k?.appId        || '';
+  document.getElementById('m_apiKey').value        = k?.apiKey        || '';
+  document.getElementById('m_laWorkspaceId').value = k?.laWorkspaceId || '';
+  document.getElementById('m_laApiKey').value      = k?.laApiKey      || '';
+}
+
+async function saveKey() {
+  const keys   = loadKeys();
+  if (!keys[modalEnv]) keys[modalEnv] = {};
+
+  const btn = document.querySelector('.modal-footer .btn-primary');
+  btn.innerHTML = '<span class="spinner"></span>Testuję...';
+  btn.disabled = true;
+
+  let ok = false;
+
+  if (modalSrc === 'ai') {
+    const appId  = document.getElementById('m_appId').value.trim();
+    const apiKey = document.getElementById('m_apiKey').value.trim();
+    if (!appId || !apiKey) { alert('Wypełnij Application ID i API Key.'); btn.innerHTML = 'Zapisz i przetestuj'; btn.disabled = false; return; }
+    ok = await testConnection(appId, apiKey);
+    if (ok) { keys[modalEnv].appId = appId; keys[modalEnv].apiKey = apiKey; }
+  } else {
+    const wsId   = document.getElementById('m_laWorkspaceId').value.trim();
+    const laKey  = document.getElementById('m_laApiKey').value.trim();
+    if (!wsId || !laKey) { alert('Wypełnij Workspace ID i API Key.'); btn.innerHTML = 'Zapisz i przetestuj'; btn.disabled = false; return; }
+    ok = await testLaConnection(wsId, laKey);
+    if (ok) { keys[modalEnv].laWorkspaceId = wsId; keys[modalEnv].laApiKey = laKey; }
+  }
+
+  btn.innerHTML = 'Zapisz i przetestuj';
+  btn.disabled = false;
+
+  if (ok) {
+    saveKeys(keys);
+    updateKeyIcons();
+    updateDemoBtn();
+    closeModal();
+    if (modalEnv === currentEnv) { stopCountdown(); fullRefresh().then(() => startCountdown()); }
+    else alert(`✅ Połączono! Klucz ${modalSrc === 'ai' ? 'App Insights' : 'Log Analytics'} dla ${modalEnv.toUpperCase()} zapisany.`);
+  }
+}
+
+function clearCurrentEnvKey() {
+  const label = modalSrc === 'ai' ? 'App Insights' : 'Log Analytics';
+  if (!confirm(`Usunąć klucz ${label} dla ${modalEnv.toUpperCase()}?`)) return;
+  const keys = loadKeys();
+  if (!keys[modalEnv]) return;
+  if (modalSrc === 'ai') { delete keys[modalEnv].appId; delete keys[modalEnv].apiKey; }
+  else                   { delete keys[modalEnv].laWorkspaceId; delete keys[modalEnv].laApiKey; }
+  if (!keys[modalEnv].appId && !keys[modalEnv].laWorkspaceId) delete keys[modalEnv];
+  saveKeys(keys);
+  updateKeyIcons();
+  updateDemoBtn();
+  switchModalEnv(modalEnv);
+  if (modalEnv === currentEnv) { stopCountdown(); fullRefresh().then(() => startCountdown()); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// APP INSIGHTS API
+// ══════════════════════════════════════════════════════════════════
+const AI_BASE = 'https://api.applicationinsights.io/v1/apps';
+
+async function aiQuery(appId, apiKey, query) {
+  const url = `${AI_BASE}/${appId}/query`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query })
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+async function testConnection(appId, apiKey) {
+  try {
+    await aiQuery(appId, apiKey, 'requests | take 1');
+    return true;
+  } catch(e) {
+    alert(`❌ Błąd połączenia App Insights:\n${e.message}\n\nSprawdź Application ID i API Key.`);
+    return false;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// LOG ANALYTICS API
+// ══════════════════════════════════════════════════════════════════
+const LA_BASE = 'https://api.loganalytics.io/v1/workspaces';
+
+async function laQuery(workspaceId, apiKey, query) {
+  const url = `${LA_BASE}/${workspaceId}/query`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query })
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+async function testLaConnection(workspaceId, apiKey) {
+  try {
+    // ADF wysyła do tabeli ADFPipelineRun — sprawdź czy workspace odpowiada
+    await laQuery(workspaceId, apiKey, 'ADFPipelineRun | take 1');
+    return true;
+  } catch(e) {
+    // Może być brak tabeli ADF — spróbuj ogólnym zapytaniem
+    try {
+      await laQuery(workspaceId, apiKey, 'search * | take 1');
+      return true;
+    } catch(e2) {
+      alert(`❌ Błąd połączenia Log Analytics:\n${e2.message}\n\nSprawdź Workspace ID i Primary Key.`);
+      return false;
+    }
+  }
+}
+
+function rangeToKql(hours) {
+  if (hours === 72) return 'ago(3d)';
+  return `ago(${hours}h)`;
+}
+
+async function fetchLiveData(appId, apiKey) {
+  const since = rangeToKql(currentRange);
+  const bin = currentRange <= 1 ? '2m' : currentRange <= 6 ? '10m' : currentRange <= 24 ? '30m' : '2h';
+
+  const [reqRes, latRes, excRes, traceRes, rolesRes, adfRes] = await Promise.all([
+    // requests over time (total)
+    aiQuery(appId, apiKey,
+      `requests | where timestamp > ${since}
+       | summarize count() by bin(timestamp, ${bin})
+       | order by timestamp asc`),
+    // latency over time (total)
+    aiQuery(appId, apiKey,
+      `requests | where timestamp > ${since}
+       | summarize avg(duration) by bin(timestamp, ${bin})
+       | order by timestamp asc`),
+    // exceptions top 5
+    aiQuery(appId, apiKey,
+      `exceptions | where timestamp > ${since}
+       | summarize count=count() by type, outerMessage, cloud_RoleName
+       | order by count desc | take 5`),
+    // traces/logs
+    aiQuery(appId, apiKey,
+      `union traces, exceptions
+       | where timestamp > ${since}
+       | order by timestamp desc | take 40
+       | project timestamp, severityLevel, message=coalesce(message, outerMessage), cloud_RoleName`),
+    // AUTODISCOVERY — per component stats
+    aiQuery(appId, apiKey,
+      `requests | where timestamp > ${since}
+       | summarize
+           calls      = count(),
+           avg_ms     = round(avg(duration), 0),
+           p95_ms     = round(percentile(duration, 95), 0),
+           errors     = countif(success == false),
+           last_seen  = max(timestamp)
+         by cloud_RoleName
+       | order by calls desc`),
+    // ADF — NIE odpytujemy już App Insights o ADF; przeniesione do fetchAdfFromLA (Log Analytics)
+    // Graceful fallback żeby nie blokować reszty danych
+    aiQuery(appId, apiKey,
+      `requests | where timestamp > ${since} | take 0`).catch(() => ({ tables: [{ rows: [] }] })),  // placeholder — nieużywany
+  ]);
+
+  return { reqRes, latRes, excRes, traceRes, rolesRes, adfRes: { tables: [{ rows: [] }] } };
+}
+
+// Osobna funkcja — ADF z Log Analytics
+async function fetchAdfFromLA(workspaceId, apiKey) {
+  const since = currentRange === 72 ? 'ago(3d)' : `ago(${currentRange}h)`;
+  // ADFPipelineRun to natywna tabela ADF w Log Analytics po włączeniu Diagnostic Settings
+  const res = await laQuery(workspaceId, apiKey, `
+    ADFPipelineRun
+    | where TimeGenerated > ${since}
+    | where Status in ("Succeeded","Failed","InProgress","Queued","Canceling","Cancelled")
+    | project
+        TimeGenerated,
+        PipelineName,
+        Status,
+        DurationInMs,
+        RunId,
+        TriggerName,
+        Start,
+        End
+    | order by TimeGenerated desc
+    | take 20
+  `);
+  const rows = res.tables?.[0]?.rows || [];
+  if (rows.length === 0) return [];
+  return rows.map(r => {
+    const ts      = r[0]; // TimeGenerated
+    const name    = r[1]; // PipelineName
+    const status  = r[2]; // Status
+    const durMs   = parseFloat(r[3]) || 0;
+    const start   = r[6];
+    const end     = r[7];
+
+    const s = Math.round(durMs / 1000);
+    const duration = durMs > 0 ? (s >= 60 ? `${Math.floor(s/60)}m ${s%60}s` : `${s}s`) : '—';
+
+    const diffMin = Math.round((Date.now() - new Date(ts).getTime()) / 60000);
+    const ago = diffMin < 1 ? 'teraz' : diffMin < 60 ? `${diffMin}m temu` : diffMin < 1440 ? `${Math.floor(diffMin/60)}h ${diffMin%60}m temu` : `${Math.floor(diffMin/1440)}d temu`;
+
+    const statusNorm = status === 'InProgress' || status === 'Queued' ? 'Running'
+                     : status === 'Canceling' || status === 'Cancelled' ? 'Failed'
+                     : status;
+
+    return { name, status: statusNorm, duration, ago, timeStr: formatHHMM(ts), rows: '—' };
+  });
+}
+
+function parseTimeSeries(res) {
+  const rows = res.tables[0].rows;
+  const vals = rows.map(r => Math.round(Number(r[1]) || 0));
+  const lbs  = rows.map(r => formatHHMM(r[0]));
+  return { vals, lbs };
+}
+
+// Heuristic: decide type based on role name patterns
+function inferComponentType(name) {
+  if (!name) return 'Function';
+  const n = name.toLowerCase();
+  if (n.includes('api') || n.includes('web') || n.includes('mvc') || n.includes('controller') || n.includes('app-service') || n.includes('appservice')) return 'WebAPI';
+  if (n.includes('func') || n.includes('function') || n.includes('trigger') || n.includes('timer') || n.includes('queue') || n.includes('blob') || n.includes('http')) return 'Function';
+  // fallback: if it looks like a URL path it's WebAPI, otherwise Function
+  return 'Function';
+}
+
+function parseRoles(rolesRes) {
+  return rolesRes.tables[0].rows.map(r => ({
+    name:        r[0] || '(unknown)',
+    invocations: Number(r[1]) || 0,
+    avgMs:       Math.round(Number(r[2]) || 0),
+    p95Ms:       Math.round(Number(r[3]) || 0),
+    errors:      Number(r[4]) || 0,
+    lastSeen:    r[5] ? formatHHMM(r[5]) : '—',
+    type:        inferComponentType(r[0]),
+  }));
+}
+
+function parseAdfRows(adfRes) {
+  const rows = adfRes?.tables?.[0]?.rows || [];
+  if (rows.length === 0) return null; // null = brak danych → użyj mock
+
+  return rows.map(r => {
+    const ts       = r[0];
+    const name     = r[1] || '(unknown)';
+    const status   = r[2] || 'Unknown';
+    const durMs    = parseFloat(r[3]) || 0;
+    const rows_    = r[4] || '';
+
+    // Formatuj czas trwania
+    let duration = '—';
+    if (durMs > 0) {
+      const s = Math.round(durMs / 1000);
+      duration = s >= 60 ? `${Math.floor(s/60)}m ${s%60}s` : `${s}s`;
+    }
+
+    // Czas temu
+    const diffMs = Date.now() - new Date(ts).getTime();
+    const diffMin = Math.round(diffMs / 60000);
+    const ago = diffMin < 1   ? 'teraz'
+              : diffMin < 60  ? `${diffMin}m temu`
+              : diffMin < 1440 ? `${Math.floor(diffMin/60)}h ${diffMin%60}m temu`
+              : `${Math.floor(diffMin/1440)}d temu`;
+    const timeStr = formatHHMM(ts);
+
+    // Normalizuj status
+    const statusNorm = status.toLowerCase().includes('succeed') || status.toLowerCase().includes('complet') ? 'Succeeded'
+                     : status.toLowerCase().includes('fail') || status.toLowerCase().includes('error')   ? 'Failed'
+                     : status.toLowerCase().includes('run') || status.toLowerCase().includes('start')    ? 'Running'
+                     : 'Unknown';
+
+    // Formatuj rows
+    const rowsFormatted = rows_ ? String(rows_) : '—';
+
+    return { name, status: statusNorm, duration, ago, timeStr, rows: rowsFormatted };
+  });
+}
+
+function updateBanner(mode, msg, componentCount) {
+  const b = document.getElementById('dataBanner');
+  const t = document.getElementById('bannerText');
+  if (mode === 'live') {
+    b.className = 'data-banner live';
+    const compInfo = componentCount ? ` · <b>${componentCount}</b> komponentów` : '';
+    t.innerHTML = `✅ Dane live — App Insights <b>${currentEnv.toUpperCase()}</b>${compInfo}`;
+    b.querySelector('.banner-actions').innerHTML = `<button class="btn btn-ghost" onclick="openModal()">⚙️ Klucze</button>`;
+  } else if (mode === 'loading') {
+    b.className = 'data-banner loading';
+    t.innerHTML = `<span class="spinner"></span>Ładowanie danych z App Insights ${currentEnv.toUpperCase()}…`;
+    b.querySelector('.banner-actions').innerHTML = '';
+  } else if (mode === 'error') {
+    b.className = 'data-banner error';
+    t.innerHTML = `❌ ${esc(msg) || 'Błąd API — sprawdź klucze'}`;
+    b.querySelector('.banner-actions').innerHTML = `<button class="btn btn-primary" onclick="openModal()">🔑 Klucze</button>`;
+  } else if (mode === 'demo') {
+    b.className = 'data-banner demo';
+    t.innerHTML = `🎭 Tryb DEMO — środowisko <b>${currentEnv.toUpperCase()}</b> · dane demonstracyjne`;
+    b.querySelector('.banner-actions').innerHTML = `<button class="btn btn-primary" onclick="openModal()">🔑 Skonfiguruj klucze</button>`;
+  } else if (mode === 'empty') {
+    b.className = 'data-banner demo';
+    t.innerHTML = `🔌 Brak kluczy dla <b>${currentEnv.toUpperCase()}</b> — skonfiguruj App Insights lub włącz DEMO`;
+    b.querySelector('.banner-actions').innerHTML = `
+      <button class="btn btn-ghost" onclick="toggleDemo()">🎭 Włącz DEMO</button>
+      <button class="btn btn-primary" onclick="openModal()">🔑 Skonfiguruj klucze</button>`;
+  }
+}
+
+function updateEnvChip(mode) {
+  const chip = document.getElementById('envChip');
+  const cfg = ENV_CONFIG[currentEnv];
+  if      (mode === 'live')    { chip.textContent = '● LIVE · ' + cfg.label;  chip.className = 'env-status-chip ok'; }
+  else if (mode === 'loading') { chip.textContent = '⟳ Ładowanie…';           chip.className = 'env-status-chip demo'; }
+  else if (mode === 'error')   { chip.textContent = '✕ Błąd API';             chip.className = 'env-status-chip warn'; }
+  else if (mode === 'demo')    { chip.textContent = '● DEMO · ' + cfg.label;  chip.className = 'env-status-chip demo'; }
+  else if (mode === 'empty')   { chip.textContent = '○ ' + cfg.label;         chip.className = 'env-status-chip demo'; }
+}
+// ══════════════════════════════════════════════════════════════════
+// MOCK DATA (fallback)
+// ══════════════════════════════════════════════════════════════════
+function randBetween(a,b){return a+Math.random()*(b-a)}
+function randInt(a,b){return Math.floor(randBetween(a,b))}
+
+const BASE_FUNCTIONS=[
+  {name:'ProcessOrderHttp',  type:'Function',invocations:1842,avgMs:134,errors:12},
+  {name:'SendNotification',  type:'Function',invocations:956, avgMs:87, errors:3 },
+  {name:'SyncInventoryTimer',type:'Function',invocations:288, avgMs:412,errors:0 },
+  {name:'CleanupServiceBus', type:'Function',invocations:144, avgMs:55, errors:1 },
+  {name:'ProductsController',type:'WebAPI',  invocations:3210,avgMs:98, errors:28},
+];
+const BASE_EXCEPTIONS=[
+  {name:'SqlException: Timeout expired',     count:17,last:'2m temu',  source:'ProcessOrderHttp'},
+  {name:'KeyNotFoundException in OrderRepo', count:9, last:'11m temu', source:'ProductsController'},
+  {name:'HttpRequestException: 503',         count:5, last:'28m temu', source:'SendNotification'},
+  {name:'NullReferenceException in Mapper',  count:3, last:'1h temu',  source:'ProductsController'},
+];
+const BASE_ADF=[
+  {name:'LoadSalesDataPipeline',      status:'Succeeded',duration:'4m 22s',ago:'8m temu',   rows:'142k'},
+  {name:'SyncCustomersDailyPipeline', status:'Running',  duration:'1m 12s',ago:'teraz',     rows:'—'  },
+  {name:'ReportAggregation',          status:'Succeeded',duration:'12m 5s',ago:'1h 2m temu',rows:'2.3M'},
+  {name:'ExportToDataLakePipeline',   status:'Failed',   duration:'0m 48s',ago:'2h temu',   rows:'—'  },
+  {name:'LoadSalesDataPipeline',      status:'Succeeded',duration:'4m 18s',ago:'8h temu',   rows:'138k'},
+];
+
+function mockTimeSeries(hours) {
+  const cfg=ENV_CONFIG[currentEnv],pts=hours*6,r=[],l=[],lb=[];
+  const now=new Date();
+  for(let i=pts-1;i>=0;i--){
+    const t=new Date(now-i*10*60*1000),hr=t.getHours();
+    const tr=hr>=8&&hr<=20?1.0:0.3;
+    r.push(Math.round(randBetween(20,90)*tr*cfg.trafficMult));
+    l.push(Math.round(randBetween(60,280)*(tr*.6+.4)*cfg.latencyMult));
+    lb.push(formatHHMM(t));
+  }
+  return {r,l,lb};
+}
+
+function mockLogs(n=24){
+  const cfg=ENV_CONFIG[currentEnv];
+  const levels=cfg.errMult>2
+    ?['Error','Error','Error','Warning','Warning','Information','Information','Trace']
+    :['Error','Warning','Information','Information','Information','Information','Trace'];
+  const sources=['ProcessOrderHttp','SendNotification','SyncInventoryTimer','ProductsController','CleanupServiceBus','ADF'];
+  const msgs={
+    Error:['Unhandled exception in request pipeline','SQL connection timeout after 30s','Failed to deserialize response','HttpClient: 503 Service Unavailable'],
+    Warning:['Queue depth exceeding threshold (>500)','Retry attempt 2/3 for SendEmail','Cache miss rate above 40%','Response time degraded: 450ms'],
+    Information:['Request completed in 87ms [200 OK]','Pipeline started','Processed 1420 messages','Health check passed'],
+    Trace:['Entering GetProductById(id=4821)','Cache hit: customers/profile/8812','DB query executed in 12ms'],
+  };
+  const arr=[],now=Date.now();
+  for(let i=0;i<n;i++){
+    const lv=levels[randInt(0,levels.length)];
+    const ts_=now-randInt(0,30*60*1000);
+    arr.push({level:lv,source:sources[randInt(0,sources.length)],msg:msgs[lv][randInt(0,msgs[lv].length)],time:formatHHMM(new Date(ts_)),ts:ts_});
+  }
+  return arr.sort((a,b)=>b.ts-a.ts);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════════════
+function renderStatus(isLive=false) {
+  const cfg=ENV_CONFIG[currentEnv];
+  const avail=currentEnv==='uat'?96.5+Math.random():99.1+Math.random()*.8;
+  const errCount=(isLive?liveExceptions:BASE_EXCEPTIONS.map(e=>({...e,count:Math.round(e.count*cfg.errMult)}))).reduce((s,e)=>s+e.count,0);
+  const totalReq=reqData.reduce((a,b)=>a+b,0);
+  const avgLat=Math.round(latData.reduce((a,b)=>a+b,0)/latData.length)||0;
+  const cards=[
+    {label:'Availability',     value:avail.toFixed(2)+'%', sub:currentEnv.toUpperCase()+' env',cls:avail>99?'ok':'warn',icon:'✅'},
+    {label:'Avg Latency (p50)',value:avgLat+'ms',           sub:'ostatnie '+(currentRange===72?'3d':currentRange+'h'),cls:avgLat<250?'ok':'warn',icon:'⚡'},
+    {label:'Błędy',            value:errCount,              sub:'wyjątki łącznie',cls:errCount>50?'error':errCount>15?'warn':'ok',icon:'⚠️'},
+    {label:'Requests',         value:totalReq.toLocaleString(),sub:'wszystkie usługi',cls:'ok',icon:'📊'},
+  ];
+  document.getElementById('statusBar').innerHTML=cards.map(c=>`
+    <div class="status-card ${c.cls}">
+      <div class="status-icon ${c.cls}">${c.icon}</div>
+      <div class="status-info">
+        <div class="status-name">${c.label}</div>
+        <div class="status-value ${c.cls}">${c.value}</div>
+        <div class="status-sub">${c.sub}</div>
+      </div>
+    </div>`).join('');
+}
+
+let liveExceptions = [];
+
+function drawChart(canvas,data,labels,color,fillColor){
+  if(!canvas||!canvas.offsetWidth)return;
+  const ctx=canvas.getContext('2d'),dpr=devicePixelRatio||1;
+  const W=canvas.width=canvas.offsetWidth*dpr,H=canvas.height=90*dpr;
+  canvas.style.height='90px';ctx.clearRect(0,0,W,H);
+  const pad={t:10*dpr,r:8*dpr,b:22*dpr,l:38*dpr};
+  const w=W-pad.l-pad.r,h=H-pad.t-pad.b;
+  const max=Math.max(...data)*1.15||1,step=w/(data.length-1);
+  ctx.strokeStyle='rgba(26,58,92,.5)';ctx.lineWidth=1;
+  [.25,.5,.75,1].forEach(f=>{
+    const y=pad.t+h*(1-f);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='rgba(74,122,155,.65)';ctx.font=`${8*dpr}px JetBrains Mono`;
+    ctx.fillText(Math.round(max*f),2,y+3*dpr);
+  });
+  const grad=ctx.createLinearGradient(0,pad.t,0,H);
+  grad.addColorStop(0,fillColor);grad.addColorStop(1,'transparent');
+  ctx.beginPath();
+  data.forEach((v,i)=>{const x=pad.l+i*step,y=pad.t+h*(1-v/max);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.lineTo(pad.l+(data.length-1)*step,pad.t+h);ctx.lineTo(pad.l,pad.t+h);ctx.closePath();
+  ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2*dpr;ctx.lineJoin='round';
+  data.forEach((v,i)=>{const x=pad.l+i*step,y=pad.t+h*(1-v/max);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  ctx.fillStyle='rgba(74,122,155,.7)';ctx.font=`${7.5*dpr}px JetBrains Mono`;
+  const skip=Math.ceil(data.length/6);
+  labels.forEach((l,i)=>{if(i%skip===0)ctx.fillText(l,pad.l+i*step-12*dpr,H-3*dpr);});
+}
+
+function initCharts(){
+  drawChart(document.getElementById('reqChart'),reqData,labels,'#0ea5e9','rgba(14,165,233,.18)');
+  drawChart(document.getElementById('latChart'),latData,labels,'#a78bfa','rgba(167,139,250,.12)');
+}
+
+function renderFunctions(funcs, isLive){
+  funcs = funcs || envFunctions();
+  const showP95 = isLive && funcs[0] && funcs[0].p95Ms !== undefined;
+
+  // Mobile cards
+  document.getElementById('funcCards').innerHTML = funcs.map(f => {
+    const rate = ((1 - f.errors / Math.max(f.invocations, 1)) * 100).toFixed(1);
+    const cls  = rate > 99 ? 'ok-text' : rate > 97 ? 'warn-text' : 'err-text';
+    const tc   = f.type === 'WebAPI' ? 'color:var(--orange)' : 'color:var(--accent2)';
+    const latStr = showP95 ? `${f.avgMs}ms avg · p95 ${f.p95Ms}ms` : `${f.avgMs}ms avg`;
+    return `<div class="func-card">
+      <div class="func-card-left">
+        <div class="func-card-name">${esc(f.name)}</div>
+        <div class="func-card-type" style="${tc}">${esc(f.type)} · ${esc(latStr)}</div>
+      </div>
+      <div class="func-card-right">
+        <div class="func-stat"><div class="func-stat-v">${f.invocations.toLocaleString()}</div><div class="func-stat-l">calls</div></div>
+        <div class="func-stat"><div class="func-stat-v err-text">${f.errors}</div><div class="func-stat-l">err</div></div>
+        <div class="func-pct ${cls}">${rate}%</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Desktop table — swap Avg ms header for p95 when live
+  const thead = document.querySelector('.func-table thead tr');
+  if (thead) {
+    thead.innerHTML = showP95
+      ? '<th>Komponent</th><th>Typ</th><th>Wywołania</th><th>Avg ms</th><th>p95 ms</th><th>Błędy</th><th>Success rate</th>'
+      : '<th>Komponent</th><th>Typ</th><th>Wywołania</th><th>Avg ms</th><th>Błędy</th><th>Success rate</th>';
+  }
+
+  document.getElementById('funcBody').innerHTML = funcs.map(f => {
+    const rate = ((1 - f.errors / Math.max(f.invocations, 1)) * 100).toFixed(1);
+    const cls  = rate > 99 ? 'ok-text' : rate > 97 ? 'warn-text' : 'err-text';
+    const bc   = rate > 99 ? 'var(--green)' : rate > 97 ? 'var(--yellow)' : 'var(--red)';
+    const tc   = f.type === 'WebAPI' ? 'color:var(--orange)' : '';
+    const p95cell = showP95 ? `<td style="color:var(--text2)">${f.p95Ms}ms</td>` : '';
+    return `<tr>
+      <td class="func-name">${esc(f.name)}</td>
+      <td><span class="func-type" style="${tc}">${esc(f.type)}</span></td>
+      <td style="color:var(--text2)">${esc(f.invocations.toLocaleString())}</td>
+      <td style="color:var(--text2)">${esc(f.avgMs)}ms</td>
+      ${p95cell}
+      <td class="err-text">${esc(f.errors)}</td>
+      <td><div class="bar-mini"><div class="bar-track"><div class="bar-fill" style="width:${rate}%;background:${bc}"></div></div><span class="${cls}" style="font-size:11px;width:42px">${rate}%</span></div></td>
+    </tr>`;
+  }).join('');
+}
+
+function envFunctions(){
+  const cfg=ENV_CONFIG[currentEnv];
+  return BASE_FUNCTIONS.map(f=>({...f,invocations:Math.round(f.invocations*cfg.trafficMult),avgMs:Math.round(f.avgMs*cfg.latencyMult),errors:Math.round(f.errors*cfg.errMult)}));
+}
+
+function renderExceptions(excs){
+  excs=excs||BASE_EXCEPTIONS.map(e=>({...e,count:Math.max(1,Math.round(e.count*ENV_CONFIG[currentEnv].errMult))}));
+  liveExceptions=excs;
+  const total=excs.reduce((s,e)=>s+e.count,0);
+  document.getElementById('excTotal').textContent=total+' łącznie';
+  document.getElementById('excBody').innerHTML=excs.map(e=>`<div class="exc-item"><div class="exc-name"><span class="exc-count">${esc(e.count)}×</span>${escTrunc(e.name||e.type||'Unknown')}</div><div class="exc-detail">📍 ${esc(e.source||e.cloud_RoleName||'—')} · ⏱ ${esc(e.last||'—')}</div></div>`).join('');
+}
+
+function renderADF(livePipelines) {
+  // livePipelines === null  → live mode, ale brak danych ADF w App Insights
+  // livePipelines === undefined → demo/mock mode
+  // livePipelines === []    → live mode, zapytanie OK ale brak runów w przedziale czasu
+  // livePipelines = [{...}] → live dane
+
+  let pipelines;
+  let isLive = livePipelines !== undefined;
+  let noAdfData = isLive && livePipelines === null;
+
+  if (noAdfData) {
+    document.getElementById('adfBadge').textContent = 'brak kluczy LA';
+    document.getElementById('adfBadge').className = 'panel-badge yellow';
+    document.getElementById('adfBody').innerHTML = `
+      <div style="padding:14px 16px">
+        <div style="background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2);border-radius:7px;padding:10px 12px;font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.8">
+          <b style="color:var(--yellow)">⚠ Brak kluczy Log Analytics dla ${esc(currentEnv.toUpperCase())}</b><br><br>
+          ADF Pipeline Runs wymagają osobnego połączenia z <b>Log Analytics</b>.<br>
+          Kliknij <b>🔑 Klucze</b> → zakładka środowiska → zakładka <b>Log Analytics (ADF)</b><br>
+          i wpisz Workspace ID + Primary Key.<br><br>
+          W ADF Studio upewnij się że masz włączone <b>Diagnostic Settings</b>:<br>
+          Azure Portal → Data Factory → Monitoring → Diagnostic settings<br>
+          → zaznacz <b>PipelineRuns, ActivityRuns, TriggerRuns</b> → Send to Log Analytics.
+        </div>
+      </div>`;
+    return;
+  }
+
+  if (isLive && livePipelines !== null && livePipelines.length === 0) {
+    document.getElementById('adfBadge').textContent = '0 runów';
+    document.getElementById('adfBadge').className = 'panel-badge green';
+    document.getElementById('adfBody').innerHTML = `<div class="panel-body"><div class="empty-state"><div class="empty-icon">✅</div><div class="empty-title">Brak pipeline runs</div><div class="empty-sub">Żadnych uruchomień w wybranym przedziale czasu</div></div></div>`;
+    return;
+  }
+
+  if (isLive && livePipelines?.length > 0) {
+    pipelines = livePipelines;
+  } else {
+    // demo/mock
+    const cfg = ENV_CONFIG[currentEnv];
+    pipelines = BASE_ADF.map(p => {
+      if (p.status === 'Running') return p;
+      return { ...p, status: Math.random() < cfg.adfFailRate && p.status === 'Succeeded' ? 'Failed' : p.status };
+    });
+  }
+
+  const ok   = pipelines.filter(p => p.status === 'Succeeded').length;
+  const fail = pipelines.filter(p => p.status === 'Failed').length;
+  const run  = pipelines.filter(p => p.status === 'Running').length;
+
+  document.getElementById('adfBadge').textContent = `${ok} OK · ${fail} FAIL${run > 0 ? ` · ${run} RUN` : ''}`;
+  document.getElementById('adfBadge').className = `panel-badge ${fail > 0 ? 'red' : 'green'}`;
+  document.getElementById('adfBody').innerHTML = pipelines.map(p => {
+    const st  = p.status === 'Succeeded' ? 'badge-ok' : p.status === 'Failed' ? 'badge-fail' : 'badge-run';
+    const lbl = p.status === 'Succeeded' ? 'OK'       : p.status === 'Failed' ? 'FAIL'       : 'RUN';
+    return `<div class="adf-run">
+      <div class="adf-pipeline">${esc(p.name)}</div>
+      <div class="adf-meta">
+        ${p.rows && p.rows !== '—' ? `<span style="color:var(--text3);font-size:10px">${esc(p.rows)}</span>` : ''}
+        <span class="adf-dur">${esc(p.duration)}</span>
+        <span style="color:var(--text3);font-size:10px" title="${esc(p.timeStr || '')}">${esc(p.ago)}</span>
+        <span class="badge ${st}">${lbl}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAvail(){
+  const cfg=ENV_CONFIG[currentEnv];
+  const blocks=Array.from({length:12},()=>{
+    const r=Math.random();
+    return cfg.health==='warn'?(r>.75?'down':r>.55?'partial':'up'):(r>.95?'down':r>.88?'partial':'up');
+  });
+  const up=blocks.filter(b=>b==='up').length;
+  const pct=((up/blocks.length)*100).toFixed(1);
+  document.getElementById('availBadge').textContent=pct+'% uptime';
+  document.getElementById('availBadge').className=`panel-badge ${pct>=99?'green':pct>=90?'yellow':'red'}`;
+  document.getElementById('availBlocks').innerHTML=blocks.map((b,i)=>`<div class="avail-block ${b}" title="${b.toUpperCase()} — ${(12-i)*30}min temu"></div>`).join('');
+}
+
+function renderLogs(logArr){
+  const filter=document.getElementById('logFilter').value;
+  const source=logArr||logs;
+  const filtered=filter?source.filter(l=>l.level===filter):source;
+  const lvMap={Error:'err',Warning:'warn',Information:'info',Trace:'trace',1:'trace',2:'info',3:'warn',4:'err'};
+  document.getElementById('logsBody').innerHTML=filtered.slice(0,16).map(l=>{
+    const lv=l.level;
+    const lvStr=typeof lv==='number'?(['','TRAC','INFO','WARN','ERRO'][lv]||'INFO'):lv.substring(0,4).toUpperCase();
+    const cls=lvMap[lv]||'info';
+    return`<div class="log-entry"><span class="log-time">${l.time || (l.timestamp ? formatHHMM(l.timestamp) : '—')}</span><span class="log-level ${cls}">${lvStr}</span><span class="log-msg">${escTrunc(l.msg||l.message||'—', 200)}</span><span class="log-src">[${esc(l.source||l.cloud_RoleName||'—')}]</span></div>`;
+  }).join('');
+}
+
+function updateMiniStats(){
+  const total=reqData.reduce((a,b)=>a+b,0);
+  const peak=Math.max(...reqData)||0;
+  const cfg=ENV_CONFIG[currentEnv];
+  const errPct=(2.1*cfg.errMult+Math.random()*.5).toFixed(1);
+  document.getElementById('reqTotal').textContent=total.toLocaleString();
+  document.getElementById('reqPeak').textContent=peak+'/min';
+  document.getElementById('reqErrPct').textContent=errPct+'%';
+  const sorted=[...latData].sort((a,b)=>a-b);
+  const p95=sorted[Math.floor(sorted.length*.95)]||0;
+  document.getElementById('latP50').textContent=(sorted[Math.floor(sorted.length*.5)]||0)+'ms';
+  document.getElementById('latP95').textContent=p95+'ms';
+  document.getElementById('latP99').textContent=(sorted[Math.floor(sorted.length*.99)]||0)+'ms';
+  document.getElementById('latBadge').textContent='p95: '+p95+'ms';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// D365 PRIVILEGE ERROR PARSER
+// ══════════════════════════════════════════════════════════════════
+
+// Parsuje surowy komunikat błędu -2147220960 z Dataverse
+function parseD365PrivilegeError(raw) {
+  if (!raw) return null;
+
+  // Wymagany marker
+  if (!raw.includes('-2147220960') && !raw.includes('is missing prv') && !raw.includes('missing privilege')) return null;
+
+  const result = {
+    raw,
+    errorCode: '-2147220960',
+    // Brakujące uprawnienie — np. prvDeletecrm_orderchangelog
+    missingPrivilege:   (raw.match(/is missing (prv\w+)/)?.[1] || raw.match(/missing privilege[^(]*\(Id=([\w-]+)\)/)?.[1] || '—'),
+    privilegeId:        raw.match(/missing prv\w+.*?\(Id=([\w-]+)\)/)?.[1] || raw.match(/\(Id=([\w-]+)\)[^)]*privilege/)?.[1] || '—',
+    // Encja D365
+    entityLogicalName:  raw.match(/for entity '(\w+)'/)?.[1] || '—',
+    entityDisplayName:  raw.match(/LocalizedName='([^']+)'/)?.[1] || '—',
+    objectTypeCode:     raw.match(/OTC=(\d+)/)?.[1] || '—',
+    // Principal (user/service principal)
+    principalId:        raw.match(/Id=([\w-]+),\s*type=/)?.[1] || '—',
+    principalType:      (() => { const t = raw.match(/type=(\d+)/)?.[1]; return t ? ({1:'User',2:'Team',8:'Service Principal (Non-interactive)'}[t] || `type=${t}`) : '—'; })(),
+    accessMode:         raw.match(/accessMode='([^']+)'/)?.[1] || '—',
+    aadObjectId:        raw.match(/AADObjectId='([\w-]+)'/)?.[1] || '—',
+    // Application
+    applicationId:      raw.match(/ApplicationId\/FullName:\s*([\w-]+)/)?.[1] || '—',
+    applicationName:    raw.match(/ApplicationId\/FullName:\s*[\w-]+\/([\w-]+)/)?.[1] || '—',
+    // Privilege details
+    privilegeType:      (() => {
+      const prv = raw.match(/is missing (prv\w+)/)?.[1] || '';
+      if (prv.startsWith('prvCreate')) return 'Create';
+      if (prv.startsWith('prvRead'))   return 'Read';
+      if (prv.startsWith('prvWrite'))  return 'Write';
+      if (prv.startsWith('prvDelete')) return 'Delete';
+      if (prv.startsWith('prvAppend')) return prv.startsWith('prvAppendTo') ? 'AppendTo' : 'Append';
+      if (prv.startsWith('prvAssign')) return 'Assign';
+      if (prv.startsWith('prvShare'))  return 'Share';
+      return prv.replace('prv','') || '—';
+    })(),
+    // Context Caller
+    contextCaller:      raw.match(/context\.Caller=([\w-]+)/)?.[1] || '—',
+    // Role info
+    roleCount:          raw.match(/roleCount=(\d+)/)?.[1] || '—',
+    privilegeCount:     raw.match(/privilegeCount=(\d+)/)?.[1] || '—',
+  };
+
+  // Czytelna nazwa uprawnienia: prvDeletecrm_orderchangelog → Delete: crm_orderchangelog
+  const prvMatch = result.missingPrivilege.match(/^prv(\w+?)([a-z_].*)$/i);
+  result.privilegeLabel = prvMatch ? `${result.privilegeType}: ${prvMatch[2]}` : result.missingPrivilege;
+
+  return result;
+}
+
+// Grupuje wiele wystąpień tego samego błędu (encja+uprawnienie)
+function groupD365Errors(errors) {
+  const map = new Map();
+  for (const e of errors) {
+    const key = `${e.entityLogicalName}|${e.missingPrivilege}|${e.applicationId}`;
+    if (map.has(key)) {
+      map.get(key).count++;
+      map.get(key).lastSeen = e.timestamp || map.get(key).lastSeen;
+    } else {
+      map.set(key, { ...e, count: 1 });
+    }
+  }
+  return [...map.values()].sort((a,b) => b.count - a.count);
+}
+
+function renderD365Errors(errors) {
+  const badge = document.getElementById('d365Badge');
+  const body  = document.getElementById('d365Body');
+
+  if (!errors || errors.length === 0) {
+    badge.textContent = '0 błędów';
+    badge.className = 'panel-badge green';
+    body.innerHTML = `<div class="panel-body"><div class="empty-state"><div class="empty-icon">✅</div><div class="empty-title">Brak błędów uprawnień D365</div><div class="empty-sub">Żadnych błędów -2147220960 w wybranym przedziale czasu</div></div></div>`;
+    return;
+  }
+
+  const grouped = groupD365Errors(errors);
+  const totalCount = grouped.reduce((s,e) => s+e.count, 0);
+  badge.textContent = `${grouped.length} typów · ${totalCount}×`;
+  badge.className = 'panel-badge red';
+
+  body.innerHTML = `<div style="padding:12px 16px;display:flex;flex-direction:column;gap:0">` +
+    grouped.map((e, idx) => {
+      const privTypeColor = {
+        Delete:'var(--red)', Create:'var(--green)', Write:'var(--yellow)',
+        Read:'var(--accent2)', Append:'var(--orange)', AppendTo:'var(--orange)',
+      }[e.privilegeType] || 'var(--text2)';
+
+      const recommendation = buildRecommendation(e);
+
+      return `<div class="d365-item" id="d365item_${idx}" style="margin-bottom:${idx<grouped.length-1?'10px':'0'}">
+        <div class="d365-header" onclick="toggleD365(${idx})">
+          <div class="d365-header-left">
+            <div class="d365-title">
+              🔒 Brakujące uprawnienie:
+              <span style="color:${privTypeColor}">${esc(e.privilegeType)}</span>
+              na encji <span style="color:var(--text)">${esc(e.entityDisplayName !== '—' ? e.entityDisplayName : e.entityLogicalName)}</span>
+            </div>
+            <div class="d365-summary">
+              Aplikacja <b>${esc(e.applicationName !== '—' ? e.applicationName : e.applicationId.slice(0,8)+'…')}</b>
+              nie ma prawa <b>${esc(e.privilegeType)}</b>
+              do encji <b>${esc(e.entityDisplayName !== '—' ? e.entityDisplayName : e.entityLogicalName)}</b>
+              ${e.objectTypeCode !== '—' ? `<span class="d365-otc-badge">OTC ${esc(e.objectTypeCode)}</span>` : ''}
+            </div>
+          </div>
+          <div class="d365-meta">
+            <span class="d365-count">${esc(e.count)}×</span>
+            <span class="d365-chevron">▶</span>
+          </div>
+        </div>
+        <div class="d365-details">
+          <div class="d365-grid">
+            <div class="d365-field">
+              <div class="d365-field-label">Encja (Logical Name)</div>
+              <div class="d365-field-val highlight">${esc(e.entityLogicalName)}</div>
+            </div>
+            <div class="d365-field">
+              <div class="d365-field-label">Encja (Display Name)</div>
+              <div class="d365-field-val">${esc(e.entityDisplayName)}</div>
+            </div>
+            <div class="d365-field">
+              <div class="d365-field-label">Wymagane uprawnienie</div>
+              <div class="d365-field-val red">${esc(e.missingPrivilege)}</div>
+            </div>
+            <div class="d365-field">
+              <div class="d365-field-label">Typ operacji</div>
+              <div class="d365-field-val" style="color:${privTypeColor};font-weight:600">${esc(e.privilegeType)}</div>
+            </div>
+            <div class="d365-field">
+              <div class="d365-field-label">Object Type Code (OTC)</div>
+              <div class="d365-field-val">${esc(e.objectTypeCode)}</div>
+            </div>
+            <div class="d365-field">
+              <div class="d365-field-label">Privilege ID</div>
+              <div class="d365-field-val" style="font-size:9px">${esc(e.privilegeId)}</div>
+            </div>
+            <div class="d365-field">
+              <div class="d365-field-label">Aplikacja (Service Principal)</div>
+              <div class="d365-field-val highlight">${esc(e.applicationName !== '—' ? e.applicationName : '—')}</div>
+            </div>
+            <div class="d365-field">
+              <div class="d365-field-label">Application ID</div>
+              <div class="d365-field-val" style="font-size:9px">${esc(e.applicationId)}</div>
+            </div>
+            <div class="d365-field">
+              <div class="d365-field-label">Principal ID (D365 User)</div>
+              <div class="d365-field-val" style="font-size:9px">${esc(e.principalId)}</div>
+            </div>
+            <div class="d365-field">
+              <div class="d365-field-label">Typ principala</div>
+              <div class="d365-field-val">${esc(e.principalType)}</div>
+            </div>
+            <div class="d365-field">
+              <div class="d365-field-label">Access Mode</div>
+              <div class="d365-field-val">${esc(e.accessMode)}</div>
+            </div>
+            <div class="d365-field">
+              <div class="d365-field-label">AAD Object ID</div>
+              <div class="d365-field-val" style="font-size:9px">${esc(e.aadObjectId)}</div>
+            </div>
+          </div>
+          <div class="d365-recommendation">${recommendation}</div>
+        </div>
+      </div>`;
+    }).join('') + `</div>`;
+}
+
+function toggleD365(idx) {
+  document.getElementById('d365item_' + idx).classList.toggle('expanded');
+}
+
+function buildRecommendation(e) {
+  const entity   = esc(e.entityDisplayName !== '—' ? e.entityDisplayName : e.entityLogicalName);
+  const app      = esc(e.applicationName   !== '—' ? e.applicationName   : e.applicationId.slice(0,8) + '…');
+  const priv     = esc(e.privilegeType);
+  const role     = esc(e.roleCount !== '—' ? e.roleCount : '?');
+  const privFull = esc(`prv${e.privilegeType}${e.entityLogicalName !== '—' ? e.entityLogicalName : ''}`);
+  const appId18  = esc(e.applicationId.slice(0,18));
+  const otc      = esc(e.objectTypeCode);
+
+  return `
+    <b>📋 Rekomendacja dla konsultanta D365:</b><br><br>
+    Aplikacja <b>${app}</b> uruchamia się jako <b>Non-interactive User</b> w Dataverse.<br>
+    Ten użytkownik ma przypisane <b>${role} ról</b>, ale żadna z nich nie zawiera uprawnienia<br>
+    <code>${privFull}</code> (<b>${priv}</b>) do encji <b>${entity}</b>.<br><br>
+    <b>Kroki naprawy:</b><br>
+    1. Otwórz <b>Power Platform Admin Center</b> → Środowisko → Użytkownicy<br>
+    2. Znajdź użytkownika aplikacji o Application ID: <code>${appId18}…</code><br>
+    3. Przejdź do <b>Zarządzaj rolami zabezpieczeń</b><br>
+    4. W roli przypisanej do tego użytkownika dodaj uprawnienie:<br>
+       &nbsp;&nbsp;<code>${priv}</code> → encja <b>${entity}</b> (OTC: ${otc}) → zakres <b>Organization</b><br>
+    5. Alternatywnie: utwórz dedykowaną rolę <code>Integration – ${entity}</code> z tym uprawnieniem i przypisz ją do użytkownika aplikacji.
+  `.trim();
+}
+
+// KQL query do pobierania błędów D365 z App Insights
+async function fetchD365Errors(appId, apiKey) {
+  const since = rangeToKql(currentRange);
+  // Szuka w exceptions i traces komunikatów z kodem -2147220960
+  const res = await aiQuery(appId, apiKey, `
+    union exceptions, traces
+    | where timestamp > ${since}
+    | where message has "-2147220960"
+       or outerMessage has "-2147220960"
+       or innermostMessage has "-2147220960"
+       or details has "-2147220960"
+    | extend rawMsg = coalesce(outerMessage, innermostMessage, message, "")
+    | project timestamp, rawMsg, cloud_RoleName, severityLevel
+    | order by timestamp desc
+    | take 200
+  `);
+  const rows = res.tables[0].rows;
+  return rows.map(r => ({
+    timestamp:     r[0],
+    raw:           r[1],
+    source:        r[2],
+    severityLevel: r[3],
+    parsed:        parseD365PrivilegeError(r[1]),
+  })).filter(r => r.parsed !== null).map(r => ({ ...r.parsed, timestamp: r.timestamp, source: r.source }));
+}
+
+// Dane demo dla sekcji D365
+function mockD365Errors() {
+  return [
+    parseD365PrivilegeError(`Principal user (Id=a1b2c3d4-0000-1111-2222-333344445555, type=8, roleCount=1, privilegeCount=41, accessMode='4 Non-interactive', AADObjectId='aaaabbbb-cccc-dddd-eeee-ffffaaaabbbb', ApplicationId/FullName: 11112222-3333-4444-5555-666677778888/func-demo-integration), is missing prvDeletecrm_orderchangelog privilege (Id=11223344-5566-7788-99aa-bbccddeeff00) on OTC=10100 for entity 'crm_orderchangelog' (LocalizedName='Order Change Log'). context.Caller=a1b2c3d4-0000-1111-2222-333344445555. Consider adding missed privilege to one of the principal (user/team) roles.`),
+    parseD365PrivilegeError(`Principal user (Id=a1b2c3d4-0000-1111-2222-333344445555, type=8, roleCount=1, privilegeCount=41, accessMode='4 Non-interactive', AADObjectId='aaaabbbb-cccc-dddd-eeee-ffffaaaabbbb', ApplicationId/FullName: 11112222-3333-4444-5555-666677778888/func-demo-integration), is missing prvDeletecrm_orderchangelog privilege (Id=11223344-5566-7788-99aa-bbccddeeff00) on OTC=10100 for entity 'crm_orderchangelog' (LocalizedName='Order Change Log'). context.Caller=a1b2c3d4-0000-1111-2222-333344445555. Consider adding missed privilege to one of the principal (user/team) roles.`),
+    parseD365PrivilegeError(`Principal user (Id=a1b2c3d4-0000-1111-2222-333344445555, type=8, roleCount=1, privilegeCount=41, accessMode='4 Non-interactive', AADObjectId='aaaabbbb-cccc-dddd-eeee-ffffaaaabbbb', ApplicationId/FullName: 11112222-3333-4444-5555-666677778888/func-demo-integration), is missing prvWritecrm_contract privilege (Id=aabbccdd-eeff-0011-2233-445566778899) on OTC=10200 for entity 'crm_contract' (LocalizedName='Contract'). context.Caller=a1b2c3d4-0000-1111-2222-333344445555. Consider adding missed privilege to one of the principal (user/team) roles.`),
+    parseD365PrivilegeError(`Principal user (Id=a1b2c3d4-0000-1111-2222-333344445555, type=8, roleCount=1, privilegeCount=41, accessMode='4 Non-interactive', AADObjectId='aaaabbbb-cccc-dddd-eeee-ffffaaaabbbb', ApplicationId/FullName: 11112222-3333-4444-5555-666677778888/func-demo-integration), is missing prvCreatecrm_invoiceline privilege (Id=ccddeeff-0011-2233-4455-667788990011) on OTC=10300 for entity 'crm_invoiceline' (LocalizedName='Invoice Line'). context.Caller=a1b2c3d4-0000-1111-2222-333344445555.`),
+  ].filter(Boolean).map((p,i) => ({ ...p, timestamp: new Date(Date.now() - i*7*60*1000).toISOString(), source: 'func-demo-integration' }));
+}
+// ══════════════════════════════════════════════════════════════════
+// REFRESH — countdown, button, progress bar
+// ══════════════════════════════════════════════════════════════════
+const REFRESH_INTERVAL = 30; // sekund
+let countdownValue = REFRESH_INTERVAL;
+let countdownTimer = null;
+let refreshTimer   = null;
+let isRefreshing   = false;
+
+function startCountdown() {
+  stopCountdown();
+  countdownValue = REFRESH_INTERVAL;
+  updateCountdownUI();
+
+  // Uruchom pasek postępu
+  const prog = document.getElementById('refreshProgress');
+  const fill = document.getElementById('refreshProgressFill');
+  fill.style.transition = 'none';
+  fill.style.width = '100%';
+  // Wymuś reflow, potem uruchom animację
+  void fill.offsetWidth;
+  prog.classList.add('animating');
+  fill.style.width = '0%';
+
+  countdownTimer = setInterval(() => {
+    countdownValue--;
+    updateCountdownUI();
+    if (countdownValue <= 0) {
+      stopCountdown();
+      fullRefresh().then(() => startCountdown());
+    }
+  }, 1000);
+}
+
+function stopCountdown() {
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+  document.getElementById('refreshProgress').classList.remove('animating');
+}
+
+function updateCountdownUI() {
+  const label = document.getElementById('countdownLabel');
+  if (label) label.textContent = countdownValue + 's';
+}
+
+function setRefreshButtonState(loading) {
+  const btn = document.getElementById('refreshBtn');
+  if (!btn) return;
+  if (loading) {
+    btn.classList.add('spinning');
+    btn.disabled = true;
+    btn.title = 'Trwa odświeżanie…';
+  } else {
+    btn.classList.remove('spinning');
+    btn.disabled = false;
+    btn.title = 'Odśwież teraz';
+  }
+}
+
+function manualRefresh() {
+  if (isRefreshing) return;
+  stopCountdown();
+  fullRefresh().then(() => startCountdown());
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SKELETON — pokazywany podczas ładowania przy zmianie env
+// ══════════════════════════════════════════════════════════════════
+function showSkeleton() {
+  // Status cards — 4 skeletony
+  document.getElementById('statusBar').innerHTML = Array.from({length:4}, () => `
+    <div class="status-card ok" style="border-top-color:var(--border)">
+      <div class="skeleton skeleton-card" style="width:34px;height:34px;border-radius:8px;flex-shrink:0"></div>
+      <div style="flex:1">
+        <div class="skeleton skeleton-line" style="width:60%;height:9px"></div>
+        <div class="skeleton skeleton-line" style="width:40%;height:18px;margin-top:4px"></div>
+        <div class="skeleton skeleton-line" style="width:50%;height:8px;margin-top:4px"></div>
+      </div>
+    </div>`).join('');
+
+  // Wykresy
+  ['reqChart','latChart'].forEach(id => {
+    const c = document.getElementById(id);
+    if (c) {
+      const ctx = c.getContext('2d');
+      const dpr = devicePixelRatio||1;
+      c.width = c.offsetWidth*dpr; c.height = 90*dpr; c.style.height='90px';
+      ctx.clearRect(0,0,c.width,c.height);
+    }
+    // Pokaż skeleton nad canvas
+    const wrap = c?.parentElement;
+    if (wrap && !wrap.querySelector('.skeleton-chart-overlay')) {
+      const sk = document.createElement('div');
+      sk.className = 'skeleton skeleton-chart skeleton-chart-overlay';
+      sk.style.cssText = 'position:absolute;inset:14px 16px;border-radius:4px';
+      wrap.style.position = 'relative';
+      wrap.appendChild(sk);
+    }
+  });
+
+  // Mini stats
+  ['reqTotal','reqPeak','reqErrPct','latP50','latP95','latP99'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.innerHTML = '<span class="skeleton skeleton-line" style="display:inline-block;width:40px;height:11px;vertical-align:middle"></span>'; }
+  });
+
+  // Functions
+  const skRows = Array.from({length:4}, () =>
+    `<div class="skeleton skeleton-row"></div>`).join('');
+  document.getElementById('funcCards').innerHTML = `<div style="padding:12px 16px;display:flex;flex-direction:column;gap:6px">${skRows}</div>`;
+  document.getElementById('funcBody').innerHTML = Array.from({length:4}, () =>
+    `<tr>${Array.from({length:6}, () => `<td><span class="skeleton skeleton-line" style="display:inline-block;width:80%;height:10px"></span></td>`).join('')}</tr>`).join('');
+
+  // Exceptions
+  document.getElementById('excTotal').textContent = '…';
+  document.getElementById('excBody').innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">${Array.from({length:3},()=>`<div><div class="skeleton skeleton-line" style="width:90%;height:11px"></div><div class="skeleton skeleton-line" style="width:50%;height:9px"></div></div>`).join('')}</div>`;
+
+  // ADF
+  document.getElementById('adfBadge').textContent = '…';
+  document.getElementById('adfBody').innerHTML = `<div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">${Array.from({length:3},()=>`<div class="skeleton skeleton-row"></div>`).join('')}</div>`;
+
+  // Availability
+  document.getElementById('availBadge').textContent = '…';
+  document.getElementById('availBlocks').innerHTML = Array.from({length:12}, () =>
+    `<div class="avail-block" style="background:var(--border);flex:1"></div>`).join('');
+
+  // Logs
+  document.getElementById('logsBody').innerHTML = Array.from({length:6}, () =>
+    `<div class="log-entry"><span class="skeleton" style="display:inline-block;width:44px;height:9px;border-radius:3px"></span><span class="skeleton" style="display:inline-block;width:40px;height:9px;border-radius:3px;margin:0 6px"></span><span class="skeleton" style="display:inline-block;flex:1;height:9px;border-radius:3px;width:60%"></span></div>`).join('');
+
+  // D365
+  document.getElementById('d365Badge').textContent = '…';
+  document.getElementById('d365Body').innerHTML = `<div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">${Array.from({length:2},()=>`<div class="skeleton" style="height:58px;border-radius:8px"></div>`).join('')}</div>`;
+
+  // Ściemnij panele
+  document.querySelectorAll('.panel').forEach(p => { p.classList.add('env-loading'); p.classList.remove('env-ready'); });
+}
+
+function hideSkeleton() {
+  // Usuń overlay skeletonów nad canvasem
+  document.querySelectorAll('.skeleton-chart-overlay').forEach(el => el.remove());
+  // Rozjaśnij panele
+  document.querySelectorAll('.panel').forEach(p => { p.classList.remove('env-loading'); p.classList.add('env-ready'); setTimeout(() => p.classList.remove('env-ready'), 400); });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ENV SWITCHER — świadome przełączanie
+// ══════════════════════════════════════════════════════════════════
+function setEnv(env) {
+  if (env === currentEnv) return; // kliknięcie tego samego — ignoruj
+  currentEnv = env;
+  document.querySelectorAll('.env-btn').forEach(b => b.classList.toggle('active', b.dataset.env === env));
+  updateDemoBtn(); // stan DEMO zależy od kluczy danego środowiska
+  stopCountdown();
+  fullRefresh().then(() => startCountdown());
+}
+
+function setRange(h) {
+  currentRange = h;
+  document.querySelectorAll('.time-btn').forEach(b => b.classList.toggle('active', b.textContent === (h===72?'3d':h+'h')));
+  stopCountdown();
+  fullRefresh().then(() => startCountdown());
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MAIN REFRESH
+// ══════════════════════════════════════════════════════════════════
+async function fullRefresh() {
+  if (isRefreshing) return;
+  isRefreshing = true;
+  setRefreshButtonState(true);
+
+  const key = getEnvKey(currentEnv);
+  const isLiveMode = hasKey(currentEnv) || hasLaKey(currentEnv);
+
+  if (isLiveMode) showSkeleton();
+
+  if (key && hasKey(currentEnv)) {
+    // ── LIVE MODE ──
+    updateBanner('loading');
+    updateEnvChip('loading');
+    try {
+      const [{ reqRes, latRes, excRes, traceRes, rolesRes }, d365Errors, adfLiveData] = await Promise.all([
+        fetchLiveData(key.appId, key.apiKey),
+        fetchD365Errors(key.appId, key.apiKey).catch(() => []),
+        hasLaKey(currentEnv)
+          ? fetchAdfFromLA(key.laWorkspaceId, key.laApiKey).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+
+      const rq = parseTimeSeries(reqRes);
+      reqData = rq.vals; labels = rq.lbs;
+      const lt = parseTimeSeries(latRes);
+      latData = lt.vals;
+
+      const liveComponents = parseRoles(rolesRes);
+
+      const excRows = excRes.tables[0].rows;
+      const excData = excRows.map(r => ({ type: r[0], name: r[1]||r[0], count: r[2], source: r[3]||'—', last: '—' }));
+
+      const trRows = traceRes.tables[0].rows;
+      const trData = trRows.map(r => ({ timestamp: r[0], level: r[1], message: r[2], cloud_RoleName: r[3] }));
+
+      hideSkeleton();
+      renderStatus(true);
+      initCharts();
+      updateMiniStats();
+      renderFunctions(liveComponents, true);
+      renderExceptions(excData);
+      renderADF(adfLiveData);   // null = brak LA klucza / błąd, [] = brak runów, [...] = live z LA
+      renderAvail();
+      renderLogs(trData);
+      renderD365Errors(d365Errors);
+      updateBanner('live', null, liveComponents.length);
+      updateEnvChip('live');
+    } catch(e) {
+      hideSkeleton();
+      updateBanner('error', 'Błąd API: ' + e.message);
+      updateEnvChip('error');
+      renderMock();
+    }
+  } else if (demoMode) {
+    // ── DEMO MODE ──
+    updateBanner('demo');
+    updateEnvChip('demo');
+    renderMock();
+  } else {
+    // ── EMPTY MODE ──
+    updateBanner('empty');
+    updateEnvChip('empty');
+    renderEmpty();
+  }
+
+  const now = new Date();
+  const lu = document.getElementById('lastUpdate');
+  lu._lastDate = now;
+  lu.textContent = 'odświeżono: ' + formatHHMMSS(now);
+  isRefreshing = false;
+  setRefreshButtonState(false);
+}
+
+function renderMock() {
+  const d = mockTimeSeries(currentRange);
+  reqData = d.r; latData = d.l; labels = d.lb;
+  logs = mockLogs(30);
+  renderStatus(false);
+  initCharts();
+  updateMiniStats();
+  renderFunctions();
+  renderExceptions();
+  renderADF();
+  renderAvail();
+  renderLogs();
+  renderD365Errors(mockD365Errors());
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════
+window.addEventListener('resize', initCharts);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+initTzSelect();
+updateKeyIcons();
+updateDemoBtn();
+fullRefresh().then(() => startCountdown());
+</script>
+</body>
+</html>
