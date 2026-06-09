@@ -16,6 +16,9 @@ on:
         required: false
         default: ''
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: read
   pages: write
@@ -50,13 +53,13 @@ jobs:
           fetch-tags: true
 
       - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v1
+        uses: gittools/actions/gitversion/setup@v3
         with:
-          versionSpec: '5.x'   # GitVersion 5.x — stabilna LTS
+          versionSpec: '6.x'
 
       - name: Execute GitVersion
         id: gv
-        uses: gittools/actions/gitversion/execute@v1
+        uses: gittools/actions/gitversion/execute@v3
         with:
           useConfigFile: true
           configFilePath: GitVersion.yml
