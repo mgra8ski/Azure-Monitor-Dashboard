@@ -39,7 +39,7 @@ jobs:
       patch:        ${{ steps.gv.outputs.patch }}
       pre_label:    ${{ steps.gv.outputs.preReleaseLabel }}
       full_semver:  ${{ steps.gv.outputs.fullSemVer }}
-      informational:${{ steps.gv.outputs.informationalVersion }}
+      informational: ${{ steps.gv.outputs.informationalVersion }}
       sha_short:    ${{ steps.sha.outputs.sha_short }}
 
     steps:
