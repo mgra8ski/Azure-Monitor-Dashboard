@@ -1,76 +1,51 @@
-# GitVersion.yml — konfiguracja wersjonowania semantycznego
-# Dokumentacja: https://gitversion.net/docs/reference/configuration
-
-# Tryb: Gitflow — pasuje do branch strategii main/release/hotfix/feature
 workflow: GitFlow/v1
 
-# Wersja bazowa — GitVersion zacznie od tej wartości jeśli nie ma tagów
 next-version: 1.0.0
+tag-prefix: 'v'
 
-# Konfiguracja tagów w repozytorium
-tag-prefix: 'v'      # tagi w repo: v1.0.0, v1.2.3 itp.
-
-# Konfiguracja per branch
 branches:
   main:
     regex: '^main$'
-    label: ''                        # main nie dostaje pre-release labela → 1.2.3
-    increment: Patch                 # push na main → bump patch (1.2.3 → 1.2.4)
-    prevent-increment-of-merged-branch-version: true
-    track-merge-target: false
+    label: ''
+    increment: Patch
     source-branches: ['release', 'hotfix']
-    is-source-branch-for: []
-    tracks-release-branches: false
     is-release-branch: false
 
   release:
-    regex: '^release[/-]'            # release/1.2 lub release-1.2
-    label: 'rc'                      # → 1.2.0-rc.1
-    increment: Minor                 # release → bump minor
-    prevent-increment-of-merged-branch-version: false
-    track-merge-target: false
+    regex: '^release[/-]'
+    label: 'rc'
+    increment: Minor
     source-branches: ['main', 'develop']
     is-release-branch: true
 
   hotfix:
-    regex: '^hotfix[/-]'             # hotfix/1.2.1 lub hotfix-fix-login
-    label: 'hotfix'                  # → 1.2.1-hotfix.1
+    regex: '^hotfix[/-]'
+    label: 'hotfix'
     increment: Patch
     source-branches: ['main', 'release']
     is-release-branch: false
 
   feature:
-    regex: '^feature[/-]'            # feature/my-feature
-    label: 'alpha'                   # → 1.2.0-alpha.1
+    regex: '^feature[/-]'
+    label: 'alpha'
     increment: Minor
     source-branches: ['main', 'develop', 'release']
 
   pull-request:
     regex: '^(pull|pull\-requests|pr)[/-]'
-    label: 'pr'                      # → 1.2.0-pr.42
+    label: 'pr'
     increment: Inherit
     source-branches: ['feature', 'hotfix', 'main']
 
   develop:
     regex: '^develop$'
-    label: 'beta'                    # → 1.2.0-beta.5
+    label: 'beta'
     increment: Minor
     source-branches: []
-    tracks-release-branches: true
 
-# Format wyświetlanej wersji informacyjnej
-# np. "1.2.3+Branch.main.Sha.abc1234"
 assembly-versioning-scheme: MajorMinorPatch
 assembly-file-versioning-format: '{Major}.{Minor}.{Patch}.{env:GITHUB_RUN_NUMBER ?? 0}'
-
-# Jak szukać historii commitów do obliczenia wersji
 commit-message-incrementing: Enabled
-
-# Przykłady commit messages wpływające na wersję:
-# +semver: major  → bump major (1.x.x → 2.0.0)
-# +semver: minor  → bump minor (1.1.x → 1.2.0)
-# +semver: patch  → bump patch (1.1.1 → 1.1.2)
-# +semver: none   → brak bumpa
 major-version-bump-message: '\+semver:\s?(breaking|major)'
 minor-version-bump-message: '\+semver:\s?(feature|minor)'
 patch-version-bump-message: '\+semver:\s?(fix|patch)'
