@@ -1445,7 +1445,11 @@ function drawChart(canvas,data,labels,color,fillColor){
   canvas.style.height='90px';ctx.clearRect(0,0,W,H);
   const pad={t:10*dpr,r:8*dpr,b:22*dpr,l:38*dpr};
   const w=W-pad.l-pad.r,h=H-pad.t-pad.b;
-  if(!data||data.length===0)return;
+  if(!data||data.length===0){
+    ctx.fillStyle='rgba(74,122,155,.4)';ctx.font=`${9*dpr}px JetBrains Mono`;ctx.textAlign='center';
+    ctx.fillText('brak danych w wybranym przedziale',W/2,H/2);ctx.textAlign='start';
+    return;
+  }
   const max=Math.max(0,...data.filter(Number.isFinite))*1.15||1,step=data.length>1?w/(data.length-1):0;
   ctx.strokeStyle='rgba(26,58,92,.5)';ctx.lineWidth=1;
   [.25,.5,.75,1].forEach(f=>{
@@ -2110,10 +2114,11 @@ async function fullRefresh() {
       updateBanner('live', null, liveComponents.length);
       updateEnvChip('live');
     } catch(e) {
+      console.error('[Azure Monitor] Błąd live fetch:', e);
       hideSkeleton();
       updateBanner('error', 'Błąd API: ' + e.message);
       updateEnvChip('error');
-      renderMock();
+      renderEmpty();
     }
   } else if (demoMode) {
     // ── DEMO MODE ──
