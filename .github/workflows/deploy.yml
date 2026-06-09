@@ -53,16 +53,20 @@ jobs:
           fetch-tags: true
 
       - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v3
-        with:
-          versionSpec: '6.x'
+        run: dotnet tool install --global GitVersion.Tool --version '6.*'
 
       - name: Execute GitVersion
         id: gv
-        uses: gittools/actions/gitversion/execute@v3
-        with:
-          useConfigFile: true
-          configFilePath: GitVersion.yml
+        run: |
+          GV=$(dotnet-gitversion /output json /config GitVersion.yml)
+          echo "$GV"
+          echo "semVer=$(echo "$GV"        | jq -r '.SemVer')"               >> $GITHUB_OUTPUT
+          echo "major=$(echo "$GV"         | jq -r '.Major')"                >> $GITHUB_OUTPUT
+          echo "minor=$(echo "$GV"         | jq -r '.Minor')"                >> $GITHUB_OUTPUT
+          echo "patch=$(echo "$GV"         | jq -r '.Patch')"                >> $GITHUB_OUTPUT
+          echo "preReleaseLabel=$(echo "$GV" | jq -r '.PreReleaseLabel')"    >> $GITHUB_OUTPUT
+          echo "fullSemVer=$(echo "$GV"    | jq -r '.FullSemVer')"           >> $GITHUB_OUTPUT
+          echo "informationalVersion=$(echo "$GV" | jq -r '.InformationalVersion')" >> $GITHUB_OUTPUT
 
       - name: Override version (manual dispatch)
         if: ${{ github.event.inputs.force_version != '' }}
