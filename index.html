@@ -239,6 +239,16 @@
   .exc-count{float:right;font-size:10px;color:var(--yellow)}
   .exc-detail{color:var(--text3);font-size:10px;line-height:1.6}
 
+  .exc-item{cursor:pointer;border-radius:6px;margin:0 -6px;padding:10px 6px;transition:background .15s}
+  .exc-item:hover{background:rgba(244,63,94,.07)}
+
+  /* EXCEPTION DETAIL MODAL */
+  .exc-modal-type{font-family:var(--mono);font-size:10px;color:var(--red);word-break:break-all;margin-bottom:6px}
+  .exc-modal-msg{font-family:var(--mono);font-size:11px;color:var(--text);line-height:1.6;word-break:break-word;background:rgba(244,63,94,.06);border:1px solid rgba(244,63,94,.15);border-radius:7px;padding:10px 12px;margin-bottom:14px;white-space:pre-wrap}
+  .exc-modal-row{display:flex;gap:8px;margin-bottom:6px;font-family:var(--mono);font-size:10px}
+  .exc-modal-label{color:var(--text3);min-width:60px;flex-shrink:0}
+  .exc-modal-value{color:var(--text2);word-break:break-all}
+
   /* DATA SOURCE BANNER */
   .data-banner{
     display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -558,6 +568,29 @@
   </div>
 
 </main>
+
+<!-- ══ EXCEPTION DETAIL MODAL ════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="excModalOverlay" onclick="if(event.target===this)closeExcModal()">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="excModalTitle"></div>
+        <div class="modal-subtitle" id="excModalSubtitle"></div>
+      </div>
+      <button class="modal-close" onclick="closeExcModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="exc-modal-type" id="excModalType"></div>
+      <div class="exc-modal-msg" id="excModalMsg"></div>
+      <div class="exc-modal-row"><span class="exc-modal-label">Źródło</span><span class="exc-modal-value" id="excModalSource"></span></div>
+      <div class="exc-modal-row"><span class="exc-modal-label">Ostatni</span><span class="exc-modal-value" id="excModalLast"></span></div>
+      <div class="exc-modal-row"><span class="exc-modal-label">Liczba</span><span class="exc-modal-value" id="excModalCount"></span></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeExcModal()">Zamknij</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ MODAL ══════════════════════════════════════════════════════ -->
 <div class="modal-overlay hidden" id="modalOverlay" onclick="overlayClick(event)">
@@ -1220,7 +1253,7 @@ function parseTimeSeries(res) {
 function inferComponentType(name) {
   if (!name) return 'Function';
   const n = name.toLowerCase();
-  if (n.includes('api') || n.includes('web') || n.includes('mvc') || n.includes('controller') || n.includes('app-service') || n.includes('appservice')) return 'WebAPI';
+  if (n.startsWith('app-') || n.includes('api') || n.includes('web') || n.includes('mvc') || n.includes('controller') || n.includes('app-service') || n.includes('appservice')) return 'WebAPI';
   if (n.includes('func') || n.includes('function') || n.includes('trigger') || n.includes('timer') || n.includes('queue') || n.includes('blob') || n.includes('http')) return 'Function';
   // fallback: if it looks like a URL path it's WebAPI, otherwise Function
   return 'Function';
@@ -1330,10 +1363,10 @@ const BASE_FUNCTIONS=[
   {name:'ProductsController',type:'WebAPI',  invocations:3210,avgMs:98, errors:28},
 ];
 const BASE_EXCEPTIONS=[
-  {name:'SqlException: Timeout expired',     count:17,last:'2m temu',  source:'ProcessOrderHttp'},
-  {name:'KeyNotFoundException in OrderRepo', count:9, last:'11m temu', source:'ProductsController'},
-  {name:'HttpRequestException: 503',         count:5, last:'28m temu', source:'SendNotification'},
-  {name:'NullReferenceException in Mapper',  count:3, last:'1h temu',  source:'ProductsController'},
+  {name:'SqlException: Timeout expired',     count:17,last:'2m temu',  source:'ProcessOrderHttp',   outerMessage:'Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding. ---> System.ComponentModel.Win32Exception: The wait operation timed out',  type:'System.Data.SqlClient.SqlException'},
+  {name:'KeyNotFoundException in OrderRepo', count:9, last:'11m temu', source:'ProductsController', outerMessage:'The given key \'45d100ab-09d1-f0a2-3c4e-7b8290cd1234\' was not present in the dictionary.',                                                                                              type:'System.Collections.Generic.KeyNotFoundException'},
+  {name:'HttpRequestException: 503',         count:5, last:'28m temu', source:'SendNotification',   outerMessage:'Response status code does not indicate success: 503 (Service Unavailable).',                                                                                                              type:'System.Net.Http.HttpRequestException'},
+  {name:'NullReferenceException in Mapper',  count:3, last:'1h temu',  source:'ProductsController', outerMessage:'Object reference not set to an instance of an object.',                                                                                                                                   type:'System.NullReferenceException'},
 ];
 const BASE_ADF=[
   {name:'LoadSalesDataPipeline',      status:'Succeeded',duration:'4m 22s',ago:'8m temu',   rows:'142k'},
@@ -1498,7 +1531,23 @@ function renderExceptions(excs){
   liveExceptions=excs;
   const total=excs.reduce((s,e)=>s+e.count,0);
   document.getElementById('excTotal').textContent=total+' łącznie';
-  document.getElementById('excBody').innerHTML=excs.map(e=>`<div class="exc-item"><div class="exc-name"><span class="exc-count">${esc(e.count)}×</span>${escTrunc(e.name||e.type||'Unknown')}</div><div class="exc-detail">📍 ${esc(e.source||e.cloud_RoleName||'—')} · ⏱ ${esc(e.last||'—')}</div></div>`).join('');
+  document.getElementById('excBody').innerHTML=excs.map((e,i)=>`<div class="exc-item" onclick="showExcDetail(${i})"><div class="exc-name"><span class="exc-count">${esc(e.count)}×</span>${escTrunc(e.name||e.type||'Unknown')}</div><div class="exc-detail">📍 ${esc(e.source||e.cloud_RoleName||'—')} · ⏱ ${esc(e.last||'—')}</div></div>`).join('');
+}
+
+function showExcDetail(i) {
+  const e = liveExceptions[i];
+  if (!e) return;
+  document.getElementById('excModalTitle').textContent = e.name || e.type || 'Unknown';
+  document.getElementById('excModalSubtitle').textContent = e.source || e.cloud_RoleName || '—';
+  document.getElementById('excModalType').textContent = e.type || '';
+  document.getElementById('excModalMsg').textContent = e.outerMessage || '(brak szczegółów)';
+  document.getElementById('excModalSource').textContent = e.source || e.cloud_RoleName || '—';
+  document.getElementById('excModalLast').textContent = e.last || '—';
+  document.getElementById('excModalCount').textContent = e.count + '×';
+  document.getElementById('excModalOverlay').classList.remove('hidden');
+}
+function closeExcModal() {
+  document.getElementById('excModalOverlay').classList.add('hidden');
 }
 
 function renderADF(livePipelines) {
@@ -2042,7 +2091,7 @@ async function fullRefresh() {
       const liveComponents = parseRoles(rolesRes);
 
       const excRows = excRes.tables[0].rows;
-      const excData = excRows.map(r => ({ type: r[0], name: r[1]||r[0], count: r[2], source: r[3]||'—', last: '—' }));
+      const excData = excRows.map(r => ({ type: r[0], name: r[1]||r[0], outerMessage: r[1]||'', count: r[2], source: r[3]||'—', last: '—' }));
 
       const trRows = traceRes.tables[0].rows;
       const trData = trRows.map(r => ({ timestamp: r[0], level: r[1], message: r[2], cloud_RoleName: r[3] }));
