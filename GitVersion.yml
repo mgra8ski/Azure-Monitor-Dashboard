@@ -4,13 +4,6 @@ next-version: 1.0.0
 tag-prefix: 'v'
 
 branches:
-  main:
-    regex: '^main$'
-    label: ''
-    increment: Patch
-    source-branches: ['release', 'hotfix']
-    is-release-branch: false
-
   release:
     regex: '^release[/-]'
     label: 'rc'
