@@ -32,6 +32,10 @@
   body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
   body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(14,165,233,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
   .wrapper{position:relative;z-index:1}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .skip-link{position:absolute;left:12px;top:-44px;background:var(--accent);color:#fff;padding:9px 12px;border-radius:6px;z-index:800;text-decoration:none;font-weight:600;transition:top .15s}
+  .skip-link:focus{top:12px}
+  button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
 
   /* HEADER */
   header{background:rgba(8,21,37,.95);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:var(--header-h);position:sticky;top:0;z-index:200;backdrop-filter:blur(16px)}
@@ -79,6 +83,12 @@
   .env-switching{animation:envFlash .3s ease}
   @keyframes envFlash{0%{opacity:.3}100%{opacity:1}}
 
+  /* SECTION NAV */
+  .section-nav{position:sticky;top:calc(var(--header-h) + var(--env-h));z-index:170;background:rgba(8,21,37,.92);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;backdrop-filter:blur(12px)}
+  .section-nav::-webkit-scrollbar{display:none}
+  .section-nav a{font-family:var(--mono);font-size:10px;color:var(--text3);text-decoration:none;border:1px solid transparent;border-radius:999px;padding:5px 10px;white-space:nowrap;transition:all .15s}
+  .section-nav a:hover,.section-nav a:focus-visible{color:var(--text);border-color:var(--border2);background:var(--panel2)}
+
   /* DEMO TOGGLE BUTTON */
   .demo-btn{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:transparent;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text3);transition:all .18s;flex-shrink:0;touch-action:manipulation;white-space:nowrap}
   .demo-btn:hover{border-color:var(--yellow);color:var(--yellow)}
@@ -101,7 +111,7 @@
   .d365-item{border:1px solid rgba(244,63,94,.2);border-radius:8px;background:rgba(244,63,94,.04);margin-bottom:10px;overflow:hidden;transition:border-color .2s}
   .d365-item:last-child{margin-bottom:0}
   .d365-item:hover{border-color:rgba(244,63,94,.4)}
-  .d365-header{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 14px 8px;gap:10px;cursor:pointer;user-select:none}
+  .d365-header{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 14px 8px;gap:10px;cursor:pointer;user-select:none;width:100%;background:transparent;border:0;text-align:left;color:inherit}
   .d365-header-left{min-width:0;flex:1}
   .d365-title{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--red);margin-bottom:3px}
   .d365-summary{font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.5}
@@ -135,6 +145,36 @@
 
   /* MAIN */
   main{padding:16px;display:flex;flex-direction:column;gap:14px}
+  section[id],.panel[id]{scroll-margin-top:calc(var(--header-h) + var(--env-h) + 54px)}
+
+  /* HEALTH SUMMARY */
+  .health-summary{display:grid;grid-template-columns:1fr;gap:12px}
+  .health-card{background:linear-gradient(180deg,rgba(13,33,64,.96),rgba(9,24,43,.96));border:1px solid var(--border);border-radius:10px;padding:16px;display:grid;gap:14px;position:relative;overflow:hidden}
+  .health-card::before{content:'';position:absolute;inset:0 0 auto;height:3px;background:var(--health-color,var(--green))}
+  .health-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+  .health-label{font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+  .health-title{font-size:24px;line-height:1.12;font-weight:600;color:var(--text)}
+  .health-title.ok{color:var(--green)}.health-title.warn{color:var(--yellow)}.health-title.error{color:var(--red)}
+  .health-narrative{font-size:13px;line-height:1.55;color:var(--text2);max-width:840px}
+  .health-meta{display:flex;flex-wrap:wrap;gap:8px}
+  .meta-chip{font-family:var(--mono);font-size:10px;color:var(--text2);border:1px solid var(--border);background:rgba(255,255,255,.03);border-radius:999px;padding:4px 9px}
+  .health-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .attention-panel .panel-body{padding:0}
+  .attention-list{display:grid;gap:0}
+  .attention-item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(26,58,92,.5)}
+  .attention-item:last-child{border-bottom:none}
+  .attention-sev{width:8px;height:36px;border-radius:99px;background:var(--text3)}
+  .attention-sev.error{background:var(--red)}.attention-sev.warn{background:var(--yellow)}.attention-sev.ok{background:var(--green)}
+  .attention-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+  .attention-detail{font-family:var(--mono);font-size:10px;color:var(--text3);line-height:1.5}
+  .attention-action{font-family:var(--mono);font-size:10px;color:var(--accent2);background:transparent;border:1px solid var(--border2);border-radius:5px;padding:5px 8px;cursor:pointer;white-space:nowrap}
+  .attention-action:hover{border-color:var(--accent);color:var(--text)}
+  .ai-card{background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.2);border-radius:10px;padding:14px 16px;display:grid;gap:10px}
+  .ai-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .ai-title{font-family:var(--mono);font-size:11px;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em}
+  .ai-body{font-size:13px;color:var(--text2);line-height:1.6}
+  .ai-actions{display:flex;flex-wrap:wrap;gap:8px}
+  .chart-summary{font-family:var(--mono);font-size:10px;color:var(--text3);line-height:1.5;margin-top:10px}
 
   /* STATUS BAR */
   .status-bar{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
@@ -233,7 +273,7 @@
   .log-filter-sel{background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:4px;outline:none}
 
   /* EXCEPTIONS */
-  .exc-item{padding:10px 0;border-bottom:1px solid rgba(26,58,92,.5);font-family:var(--mono);font-size:11px}
+  .exc-item{padding:10px 0;border:0;border-bottom:1px solid rgba(26,58,92,.5);font-family:var(--mono);font-size:11px;background:transparent;color:inherit;text-align:left;width:100%}
   .exc-item:last-child{border-bottom:none}
   .exc-name{color:var(--red);margin-bottom:4px;word-break:break-word}
   .exc-count{float:right;font-size:10px;color:var(--yellow)}
@@ -248,6 +288,17 @@
   .exc-modal-row{display:flex;gap:8px;margin-bottom:6px;font-family:var(--mono);font-size:10px}
   .exc-modal-label{color:var(--text3);min-width:60px;flex-shrink:0}
   .exc-modal-value{color:var(--text2);word-break:break-all}
+
+  /* ERROR EVENTS */
+  .error-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .error-list{display:flex;flex-direction:column;gap:0}
+  .error-row{display:grid;grid-template-columns:72px 68px minmax(0,1fr) 150px;gap:10px;align-items:flex-start;padding:10px 16px;border-bottom:1px solid rgba(26,58,92,.4);font-family:var(--mono);font-size:11px}
+  .error-row:last-child{border-bottom:none}
+  .error-time{color:var(--text3);white-space:nowrap}
+  .error-kind{font-size:9px;padding:2px 7px;border-radius:999px;border:1px solid rgba(244,63,94,.35);color:var(--red);background:rgba(244,63,94,.08);text-align:center;white-space:nowrap}
+  .error-message{color:var(--text2);line-height:1.55;word-break:break-word}
+  .error-source{color:var(--text3);text-align:right;word-break:break-word}
+  .error-empty{padding:18px 16px}
 
   /* DATA SOURCE BANNER */
   .data-banner{
@@ -350,6 +401,10 @@
   @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
   .panel{animation:fadeIn .35s ease both}
 
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important}
+  }
+
   /* DESKTOP */
   @media(min-width:768px){
     :root{--header-h:60px;--env-h:48px}
@@ -364,6 +419,12 @@
     .env-label{font-size:11px}
     .env-btn{font-size:12px;padding:7px 16px}
     main{padding:24px 28px;gap:20px}
+    .section-nav{padding:9px 28px;top:calc(var(--header-h) + var(--env-h))}
+    .section-nav a{font-size:11px;padding:6px 12px}
+    .health-summary{grid-template-columns:minmax(0,1.6fr) minmax(320px,.8fr);align-items:stretch}
+    .health-card{padding:20px}
+    .health-title{font-size:30px}
+    .health-narrative{font-size:14px}
     .data-banner{flex-wrap:nowrap;padding:12px 20px;font-size:12px}
     .status-bar{grid-template-columns:repeat(4,1fr);gap:12px}
     .status-card{padding:16px 20px;gap:14px}
@@ -380,89 +441,160 @@
     .log-src{display:block}
     .log-time{width:60px;font-size:11px}
     .log-level{width:50px}
+    .error-row{padding:11px 20px}
     .avail-block{min-width:14px}
     .exc-item{font-size:12px}
   }
   @media(max-width:767px){
+    :root{--header-h:56px;--env-h:48px}
+    .header-right{gap:6px}
+    .time-btn{padding:4px 7px}
+    .refresh-indicator{display:none}
+    .section-nav{top:calc(var(--header-h) + var(--env-h));padding:7px 12px}
+    main{padding:12px;gap:12px}
+    .health-top{flex-direction:column}
+    .health-title{font-size:21px}
+    .health-actions{width:100%}
+    .health-actions .btn{flex:1}
+    .attention-item{grid-template-columns:auto 1fr;align-items:flex-start}
+    .attention-action{grid-column:2;justify-self:start}
+    .data-banner{font-size:10px}
+    .error-row{grid-template-columns:58px 58px minmax(0,1fr);padding:10px 12px}
+    .error-source{grid-column:3;text-align:left}
     .grid-2,.grid-3{grid-template-columns:1fr}
   }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#mainContent">Przejdź do dashboardu</a>
 <div class="wrapper">
 
 <!-- HEADER -->
-<header>
+<header role="banner">
   <div class="header-left">
-    <div class="azure-logo">☁</div>
+    <div class="azure-logo" aria-hidden="true">AZ</div>
     <div class="header-title">
       Azure Monitor<span class="sep sub">/</span><span class="sub">Application Insights</span>
     </div>
   </div>
   <div class="header-right">
-    <div class="time-range">
-      <button class="time-btn" onclick="setRange(1)">1h</button>
-      <button class="time-btn active" onclick="setRange(6)">6h</button>
-      <button class="time-btn" onclick="setRange(24)">24h</button>
-      <button class="time-btn" onclick="setRange(72)">3d</button>
+    <div class="time-range" role="group" aria-label="Zakres czasu">
+      <button class="time-btn" onclick="setRange(1)" aria-pressed="false">1h</button>
+      <button class="time-btn active" onclick="setRange(6)" aria-pressed="true">6h</button>
+      <button class="time-btn" onclick="setRange(24)" aria-pressed="false">24h</button>
+      <button class="time-btn" onclick="setRange(72)" aria-pressed="false">3d</button>
     </div>
-    <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()" title="Odśwież teraz">
+    <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()" title="Odśwież teraz" aria-label="Odśwież dane teraz">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M13.5 2.5A6.5 6.5 0 1 1 8 1.5"/>
         <polyline points="11 1 13.5 2.5 11.5 5"/>
       </svg>
     </button>
-    <div class="refresh-indicator"><div class="pulse-dot"></div><span id="countdownLabel">30s</span></div>
+    <div class="refresh-indicator" role="status" aria-live="polite"><div class="pulse-dot" aria-hidden="true"></div><span id="countdownLabel">30s</span></div>
     <a class="version-badge" id="versionBadge" title="Build: __FULL_VERSION__ · SHA: __SHA__ · __BRANCH__" href="https://github.com/__GITHUB_REPO__/releases" target="_blank" rel="noopener">
       v<span class="vb-tag">__VERSION__</span>
     </a>
-    <div class="last-update" id="lastUpdate">—</div>
+    <div class="last-update" id="lastUpdate" role="status" aria-live="polite">—</div>
   </div>
 </header>
 
 <!-- REFRESH PROGRESS BAR -->
-<div class="refresh-progress" id="refreshProgress">
+<div class="refresh-progress" id="refreshProgress" aria-hidden="true">
   <div class="refresh-progress-fill" id="refreshProgressFill"></div>
 </div>
 
 <!-- ENV BAR -->
-<div class="env-bar">
+<div class="env-bar" role="group" aria-label="Środowisko i źródła danych">
   <span class="env-label">ENV:</span>
-  <button class="env-btn" data-env="dev" onclick="setEnv('dev')"><span class="env-dot"></span>DEV<span class="env-key-icon" id="keyIcon_dev">🔑</span></button>
-  <button class="env-btn" data-env="sit" onclick="setEnv('sit')"><span class="env-dot"></span>SIT<span class="env-key-icon" id="keyIcon_sit">🔑</span></button>
-  <button class="env-btn" data-env="uat" onclick="setEnv('uat')"><span class="env-dot"></span>UAT<span class="env-key-icon" id="keyIcon_uat">🔑</span></button>
-  <button class="env-btn active" data-env="prod" onclick="setEnv('prod')"><span class="env-dot"></span>PROD<span class="env-key-icon" id="keyIcon_prod">🔑</span></button>
+  <button class="env-btn" data-env="dev" onclick="setEnv('dev')" aria-pressed="false"><span class="env-dot" aria-hidden="true"></span>DEV<span class="env-key-icon" id="keyIcon_dev">key</span></button>
+  <button class="env-btn" data-env="sit" onclick="setEnv('sit')" aria-pressed="false"><span class="env-dot" aria-hidden="true"></span>SIT<span class="env-key-icon" id="keyIcon_sit">key</span></button>
+  <button class="env-btn" data-env="uat" onclick="setEnv('uat')" aria-pressed="false"><span class="env-dot" aria-hidden="true"></span>UAT<span class="env-key-icon" id="keyIcon_uat">key</span></button>
+  <button class="env-btn active" data-env="prod" onclick="setEnv('prod')" aria-pressed="true"><span class="env-dot" aria-hidden="true"></span>PROD<span class="env-key-icon" id="keyIcon_prod">key</span></button>
   <div class="env-sep"></div>
-  <button class="demo-btn" id="demoBtn" onclick="toggleDemo()" title="Tryb demonstracyjny — pokazuje przykładowe dane zamiast pustych widgetów">
-    <span class="demo-dot"></span>DEMO
+  <button class="demo-btn" id="demoBtn" onclick="toggleDemo()" title="Tryb demonstracyjny — pokazuje przykładowe dane zamiast pustych widgetów" aria-pressed="true">
+    <span class="demo-dot" aria-hidden="true"></span>DEMO
   </button>
   <div class="env-sep"></div>
-  <span class="tz-label">🕐</span>
+  <span class="tz-label" aria-hidden="true">TZ</span>
+  <label class="sr-only" for="tzSelect">Strefa czasowa wyświetlanych danych</label>
   <select class="tz-select" id="tzSelect" onchange="onTzChange()" title="Strefa czasowa wyświetlanych danych"></select>
-  <div class="env-status-chip demo" id="envChip">● DEMO</div>
+  <div class="env-status-chip demo" id="envChip" role="status" aria-live="polite">● DEMO</div>
 </div>
 
-<main id="mainContent">
+<nav class="section-nav" aria-label="Sekcje dashboardu">
+  <a href="#overview">Overview</a>
+  <a href="#attention">Problemy</a>
+  <a href="#performance">Wydajność</a>
+  <a href="#components">Komponenty</a>
+  <a href="#allErrorsPanel">Błędy</a>
+  <a href="#dataPipelines">ADF</a>
+  <a href="#logsPanel">Logi</a>
+  <a href="#d365Panel">D365</a>
+</nav>
+
+<main id="mainContent" tabindex="-1">
 
   <!-- DATA SOURCE BANNER -->
-  <div class="data-banner demo" id="dataBanner">
-    <div class="banner-left" id="bannerText">⚠️ Brak kluczy — dane demonstracyjne</div>
+  <div class="data-banner demo" id="dataBanner" role="status" aria-live="polite">
+    <div class="banner-left" id="bannerText">Brak kluczy — dane demonstracyjne</div>
     <div class="banner-actions">
-      <button class="btn btn-primary" onclick="openModal()">🔑 Skonfiguruj klucze</button>
+      <button class="btn btn-primary" onclick="openModal()">Skonfiguruj klucze</button>
     </div>
   </div>
+
+  <!-- HEALTH SUMMARY -->
+  <section class="health-summary" id="overview" aria-labelledby="healthTitle">
+    <div class="health-card" id="healthCard">
+      <div class="health-top">
+        <div>
+          <div class="health-label">Stan operacyjny</div>
+          <h1 class="health-title ok" id="healthTitle">Ładowanie dashboardu</h1>
+        </div>
+        <div class="health-actions">
+          <button class="btn btn-primary" onclick="manualRefresh()">Odśwież</button>
+          <button class="btn btn-ghost" onclick="copyIncidentDraft()">Kopiuj raport</button>
+          <button class="btn btn-ghost" onclick="exportSnapshot()">Eksport snapshotu</button>
+        </div>
+      </div>
+      <p class="health-narrative" id="healthNarrative">Pobieram dane i przygotowuję priorytety diagnostyczne.</p>
+      <div class="health-meta" id="healthMeta"></div>
+    </div>
+    <div class="ai-card" id="aiAssistant">
+      <div class="ai-head">
+        <div class="ai-title">AI diagnostic helper</div>
+        <button class="btn btn-ghost" onclick="copyAiSummary()">Kopiuj wnioski</button>
+      </div>
+      <div class="ai-body" id="aiInsight">Po odświeżeniu danych zobaczysz krótką interpretację: prawdopodobną przyczynę, wpływ i następny krok diagnostyczny.</div>
+      <div class="ai-actions">
+        <button class="btn btn-ghost" onclick="setLogFilter('Error')">Pokaż błędy w logach</button>
+        <button class="btn btn-ghost" onclick="location.hash='d365Panel'">Przejdź do D365</button>
+        <button class="btn btn-ghost" onclick="location.hash='attention'">Lista problemów</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ATTENTION QUEUE -->
+  <section class="panel attention-panel" id="attention" aria-labelledby="attentionTitle">
+    <div class="panel-header">
+      <div class="panel-title" id="attentionTitle"><div class="dot" style="background:var(--red)"></div>Wymaga uwagi</div>
+      <div class="panel-badge green" id="attentionBadge">—</div>
+    </div>
+    <div class="panel-body">
+      <div class="attention-list" id="attentionBody"></div>
+    </div>
+  </section>
 
   <!-- STATUS BAR -->
   <div class="status-bar" id="statusBar"></div>
 
   <!-- CHARTS -->
-  <div class="grid-2">
+  <section class="grid-2" id="performance" aria-label="Ruch i wydajność">
     <div class="panel">
       <div class="panel-header">
         <div class="panel-title"><div class="dot" style="background:var(--accent)"></div>Wywołania / min</div>
         <div class="panel-badge green" id="reqBadge">—</div>
       </div>
-      <div class="panel-body"><canvas id="reqChart" height="90"></canvas></div>
+      <div class="panel-body"><canvas id="reqChart" height="90" role="img" aria-label="Wykres wywołań na minutę"></canvas><div class="chart-summary" id="reqChartSummary">Brak danych.</div></div>
       <div class="mini-stats">
         <div class="mini-stat"><div class="mini-label">Łącznie</div><div class="mini-val" id="reqTotal">—</div></div>
         <div class="mini-stat"><div class="mini-label">Szczyt/min</div><div class="mini-val" id="reqPeak">—</div></div>
@@ -471,21 +603,21 @@
     </div>
     <div class="panel">
       <div class="panel-header">
-        <div class="panel-title"><div class="dot" style="background:var(--purple)"></div>Latency (ms)</div>
+        <div class="panel-title"><div class="dot" style="background:var(--purple)"></div>Opóźnienie (ms)</div>
         <div class="panel-badge green" id="latBadge">p95: —</div>
       </div>
-      <div class="panel-body"><canvas id="latChart" height="90"></canvas></div>
+      <div class="panel-body"><canvas id="latChart" height="90" role="img" aria-label="Wykres opóźnienia w milisekundach"></canvas><div class="chart-summary" id="latChartSummary">Brak danych.</div></div>
       <div class="mini-stats">
         <div class="mini-stat"><div class="mini-label">p50</div><div class="mini-val" id="latP50">—</div></div>
         <div class="mini-stat"><div class="mini-label">p95</div><div class="mini-val" id="latP95">—</div></div>
         <div class="mini-stat"><div class="mini-label">p99</div><div class="mini-val warn-text" id="latP99">—</div></div>
       </div>
     </div>
-  </div>
+  </section>
 
   <!-- FUNCTIONS + EXCEPTIONS -->
   <div class="grid-3">
-    <div class="panel">
+    <div class="panel" id="components">
       <div class="panel-header">
         <div class="panel-title"><div class="dot" style="background:var(--accent2)"></div>Functions & Web API</div>
       </div>
@@ -497,7 +629,7 @@
         </table>
       </div>
     </div>
-    <div class="panel">
+    <div class="panel" id="exceptionsPanel">
       <div class="panel-header">
         <div class="panel-title"><div class="dot" style="background:var(--red)"></div>Wyjątki</div>
         <div class="panel-badge red" id="excTotal">—</div>
@@ -506,9 +638,24 @@
     </div>
   </div>
 
+  <!-- ALL ERRORS -->
+  <div class="panel" id="allErrorsPanel">
+    <div class="panel-header">
+      <div class="panel-title"><div class="dot" style="background:var(--red)"></div>Wszystkie błędy z okresu</div>
+      <div class="error-toolbar">
+        <select id="errorSourceFilter" onchange="renderAllErrors()" class="log-filter-sel" aria-label="Filtruj błędy po źródle">
+          <option value="">Wszystkie źródła</option>
+        </select>
+        <input id="errorSearch" class="log-filter-sel" oninput="renderAllErrors()" placeholder="Szukaj błędu" aria-label="Szukaj w błędach" />
+        <div class="panel-badge red" id="allErrorsBadge">—</div>
+      </div>
+    </div>
+    <div id="allErrorsBody"></div>
+  </div>
+
   <!-- ADF + AVAILABILITY -->
   <div class="grid-2">
-    <div class="panel">
+    <div class="panel" id="dataPipelines">
       <div class="panel-header">
         <div class="panel-title"><div class="dot" style="background:var(--orange)"></div>ADF — Pipeline Runs</div>
         <div class="panel-badge green" id="adfBadge">—</div>
@@ -517,7 +664,7 @@
     </div>
     <div class="panel">
       <div class="panel-header">
-        <div class="panel-title"><div class="dot" style="background:var(--green)"></div>Availability (30min slots)</div>
+        <div class="panel-title"><div class="dot" style="background:var(--green)"></div>Dostępność (sloty 30 min)</div>
         <div class="panel-badge green" id="availBadge">—</div>
       </div>
       <div class="panel-body">
@@ -532,7 +679,7 @@
   </div>
 
   <!-- LOGS -->
-  <div class="panel">
+  <div class="panel" id="logsPanel">
     <div class="panel-header">
       <div class="panel-title"><div class="dot" style="background:var(--purple)"></div>Logi / Traces</div>
       <select id="logFilter" onchange="renderLogs()" class="log-filter-sel">
@@ -542,6 +689,7 @@
         <option value="Information">Info</option>
         <option value="Trace">Trace</option>
       </select>
+      <input id="logSearch" class="log-filter-sel" oninput="renderLogs()" placeholder="Szukaj" aria-label="Szukaj w logach" />
     </div>
     <div class="panel-body" style="padding:8px 16px" id="logsBody"></div>
   </div>
@@ -571,13 +719,13 @@
 
 <!-- ══ EXCEPTION DETAIL MODAL ════════════════════════════════════ -->
 <div class="modal-overlay hidden" id="excModalOverlay" onclick="if(event.target===this)closeExcModal()">
-  <div class="modal" style="max-width:560px">
+  <div class="modal" style="max-width:560px" role="dialog" aria-modal="true" aria-labelledby="excModalTitle">
     <div class="modal-header">
       <div>
         <div class="modal-title" id="excModalTitle"></div>
         <div class="modal-subtitle" id="excModalSubtitle"></div>
       </div>
-      <button class="modal-close" onclick="closeExcModal()">✕</button>
+      <button class="modal-close" onclick="closeExcModal()" aria-label="Zamknij szczegóły wyjątku">✕</button>
     </div>
     <div class="modal-body">
       <div class="exc-modal-type" id="excModalType"></div>
@@ -594,13 +742,13 @@
 
 <!-- ══ MODAL ══════════════════════════════════════════════════════ -->
 <div class="modal-overlay hidden" id="modalOverlay" onclick="overlayClick(event)">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="keyModalTitle">
     <div class="modal-header">
       <div>
-        <div class="modal-title">🔑 Klucze Application Insights</div>
+        <div class="modal-title" id="keyModalTitle">Klucze Application Insights</div>
         <div class="modal-subtitle">Zapisywane tylko w localStorage Twojej przeglądarki</div>
       </div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Zamknij konfigurację kluczy">✕</button>
     </div>
     <div class="modal-body">
       <div class="modal-info">
@@ -611,18 +759,18 @@
 
       <!-- ENV TABS -->
       <div class="env-tabs">
-        <button class="env-tab active" data-env="dev" onclick="switchModalEnv('dev')">DEV<span class="tab-check" id="tc_dev"></span></button>
-        <button class="env-tab" data-env="sit" onclick="switchModalEnv('sit')">SIT<span class="tab-check" id="tc_sit"></span></button>
-        <button class="env-tab" data-env="uat" onclick="switchModalEnv('uat')">UAT<span class="tab-check" id="tc_uat"></span></button>
-        <button class="env-tab" data-env="prod" onclick="switchModalEnv('prod')">PROD<span class="tab-check" id="tc_prod"></span></button>
+        <button class="env-tab active" data-env="dev" onclick="switchModalEnv('dev')" aria-pressed="true">DEV<span class="tab-check" id="tc_dev"></span></button>
+        <button class="env-tab" data-env="sit" onclick="switchModalEnv('sit')" aria-pressed="false">SIT<span class="tab-check" id="tc_sit"></span></button>
+        <button class="env-tab" data-env="uat" onclick="switchModalEnv('uat')" aria-pressed="false">UAT<span class="tab-check" id="tc_uat"></span></button>
+        <button class="env-tab" data-env="prod" onclick="switchModalEnv('prod')" aria-pressed="false">PROD<span class="tab-check" id="tc_prod"></span></button>
       </div>
 
       <!-- SOURCE TABS — AI vs LA -->
       <div class="src-tabs">
-        <button class="src-tab active" data-src="ai" onclick="switchModalSrc('ai')">
+        <button class="src-tab active" data-src="ai" onclick="switchModalSrc('ai')" aria-pressed="true">
           <span class="src-dot"></span>Application Insights
         </button>
-        <button class="src-tab" data-src="la" onclick="switchModalSrc('la')">
+        <button class="src-tab" data-src="la" onclick="switchModalSrc('la')" aria-pressed="false">
           <span class="src-dot"></span>Log Analytics (ADF)
         </button>
       </div>
@@ -630,12 +778,12 @@
       <!-- APP INSIGHTS FIELDS -->
       <div id="srcPanel_ai">
         <div class="field">
-          <label class="field-label">Application ID</label>
+          <label class="field-label" for="m_appId">Application ID</label>
           <input class="field-input" id="m_appId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
           <div class="field-hint">Portal → App Insights → Configure → API Access → Application ID</div>
         </div>
         <div class="field">
-          <label class="field-label">API Key</label>
+          <label class="field-label" for="m_apiKey">API Key</label>
           <input class="field-input" id="m_apiKey" type="password" placeholder="••••••••••••••••••••" />
           <div class="field-hint">Utwórz klucz z uprawnieniem <b>Read telemetry</b>. Klucz widać tylko raz po utworzeniu.</div>
         </div>
@@ -644,12 +792,12 @@
       <!-- LOG ANALYTICS FIELDS -->
       <div id="srcPanel_la" style="display:none">
         <div class="field">
-          <label class="field-label">Workspace ID</label>
+          <label class="field-label" for="m_laWorkspaceId">Workspace ID</label>
           <input class="field-input" id="m_laWorkspaceId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
           <div class="field-hint">Portal → Log Analytics workspace → Overview → Workspace ID</div>
         </div>
         <div class="field">
-          <label class="field-label">API Key (Primary key)</label>
+          <label class="field-label" for="m_laApiKey">API Key (Primary key)</label>
           <input class="field-input" id="m_laApiKey" type="password" placeholder="••••••••••••••••••••" />
           <div class="field-hint">Portal → Log Analytics workspace → Agents → <b>Primary key</b><br>Używane do zapytań przez <b>api.loganalytics.io</b></div>
         </div>
@@ -717,9 +865,15 @@ const LS_DEMO = 'az_monitor_demo';
 let currentEnv = 'prod';
 let currentRange = 6;
 let reqData = [], latData = [], labels = [], logs = [];
+let allErrorEvents = [];
 let modalEnv = 'dev';
 let modalSrc = 'ai'; // 'ai' | 'la'
 let demoMode = localStorage.getItem(LS_DEMO) !== 'false';
+let lastSnapshot = null;
+let lastAiSummary = '';
+let lastIncidentDraft = '';
+let lastD365Grouped = [];
+let lastFocusedElement = null;
 
 // ══════════════════════════════════════════════════════════════════
 // TIMEZONE
@@ -845,13 +999,13 @@ function updateKeyIcons() {
     const ai  = hasKey(env);
     const la  = hasLaKey(env);
     if (ai && la) {
-      el.textContent = '✓✓'; el.style.color = 'var(--green)'; el.title = 'App Insights + Log Analytics';
+      el.textContent = 'AI+LA'; el.style.color = 'var(--green)'; el.title = 'App Insights + Log Analytics';
       btn.classList.add('env-configured');
     } else if (ai || la) {
-      el.textContent = '✓'; el.style.color = 'var(--yellow)'; el.title = ai ? 'App Insights OK, brak Log Analytics' : 'Log Analytics OK, brak App Insights';
+      el.textContent = ai ? 'AI' : 'LA'; el.style.color = 'var(--yellow)'; el.title = ai ? 'App Insights OK, brak Log Analytics' : 'Log Analytics OK, brak App Insights';
       btn.classList.add('env-configured');
     } else {
-      el.textContent = '🔑'; el.style.color = ''; el.title = '';
+      el.textContent = 'key'; el.style.color = ''; el.title = '';
       btn.classList.remove('env-configured');
     }
   });
@@ -953,6 +1107,176 @@ function updateDemoBtn() {
       ? 'Tryb DEMO aktywny — kliknij aby wyłączyć i pokazywać puste widgety bez kluczy'
       : 'Tryb DEMO wyłączony — bez kluczy widgety będą puste. Kliknij aby włączyć dane demonstracyjne';
   }
+  btn.setAttribute('aria-pressed', String(demoMode && !btn.disabled));
+}
+
+function updatePressedStates() {
+  document.querySelectorAll('.env-btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.env === currentEnv)));
+  document.querySelectorAll('.time-btn').forEach(b => {
+    const label = currentRange === 72 ? '3d' : currentRange + 'h';
+    b.setAttribute('aria-pressed', String(b.textContent === label));
+  });
+  document.querySelectorAll('.env-tab').forEach(t => t.setAttribute('aria-pressed', String(t.dataset.env === modalEnv)));
+  document.querySelectorAll('.src-tab').forEach(t => t.setAttribute('aria-pressed', String(t.dataset.src === modalSrc)));
+}
+
+function percentile(vals, p) {
+  const sorted = vals.filter(Number.isFinite).sort((a,b) => a-b);
+  if (sorted.length === 0) return 0;
+  return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
+}
+
+function buildOpsSnapshot({mode, components=[], exceptions=[], d365Errors=[], adfPipelines, error=null} = {}) {
+  const totalReq = reqData.reduce((a,b) => a + b, 0);
+  const peakReq = reqData.length ? Math.max(0, ...reqData.filter(Number.isFinite)) : 0;
+  const p50 = percentile(latData, .5);
+  const p95 = percentile(latData, .95);
+  const p99 = percentile(latData, .99);
+  const excTotal = exceptions.reduce((s,e) => s + (Number(e.count) || 0), 0);
+  const d365Grouped = d365Errors && d365Errors.length ? groupD365Errors(d365Errors) : [];
+  const d365Total = d365Grouped.reduce((s,e) => s + (Number(e.count) || 0), 0);
+  const adfFail = Array.isArray(adfPipelines) ? adfPipelines.filter(p => p.status === 'Failed').length : 0;
+  const adfRunning = Array.isArray(adfPipelines) ? adfPipelines.filter(p => p.status === 'Running').length : 0;
+  const componentErrors = components.reduce((s,c) => s + (Number(c.errors) || 0), 0);
+  const worstComponent = [...components].sort((a,b) => (b.errors || 0) - (a.errors || 0) || (b.avgMs || 0) - (a.avgMs || 0))[0];
+
+  let severity = 'ok';
+  if (mode === 'error' || excTotal > 50 || d365Total > 0 || adfFail > 0 || p95 > 750) severity = 'error';
+  else if (mode === 'empty' || excTotal > 15 || componentErrors > 20 || p95 > 300 || adfPipelines === null) severity = 'warn';
+
+  return {
+    mode, severity, totalReq, peakReq, p50, p95, p99, excTotal, d365Total, d365Grouped,
+    adfFail, adfRunning, componentErrors, worstComponent, error,
+    source: mode === 'live' ? 'LIVE' : mode === 'demo' ? 'DEMO' : mode === 'error' ? 'ERROR' : 'EMPTY',
+    range: currentRange === 72 ? '3d' : currentRange + 'h',
+    env: currentEnv.toUpperCase(),
+    timestamp: new Date().toISOString(),
+  };
+}
+
+function renderOperationalSummary(input = {}) {
+  const snapshot = buildOpsSnapshot(input);
+  lastSnapshot = snapshot;
+  lastD365Grouped = snapshot.d365Grouped;
+
+  const healthCard = document.getElementById('healthCard');
+  const title = document.getElementById('healthTitle');
+  const narrative = document.getElementById('healthNarrative');
+  const meta = document.getElementById('healthMeta');
+  const attentionBody = document.getElementById('attentionBody');
+  const attentionBadge = document.getElementById('attentionBadge');
+  const aiInsight = document.getElementById('aiInsight');
+
+  const color = snapshot.severity === 'error' ? 'var(--red)' : snapshot.severity === 'warn' ? 'var(--yellow)' : 'var(--green)';
+  healthCard.style.setProperty('--health-color', color);
+  title.className = 'health-title ' + (snapshot.severity === 'error' ? 'error' : snapshot.severity === 'warn' ? 'warn' : 'ok');
+
+  if (snapshot.mode === 'empty') {
+    title.textContent = `${snapshot.env}: brak źródeł danych`;
+    narrative.textContent = 'Skonfiguruj App Insights lub włącz demo, żeby zobaczyć stan środowiska i priorytety diagnostyczne.';
+  } else if (snapshot.mode === 'error') {
+    title.textContent = `${snapshot.env}: błąd pobierania danych`;
+    narrative.textContent = snapshot.error ? `API zwróciło błąd: ${snapshot.error}` : 'Nie udało się pobrać danych telemetrycznych.';
+  } else if (snapshot.severity === 'error') {
+    title.textContent = `${snapshot.env}: wymaga interwencji`;
+    narrative.textContent = `Najpierw sprawdź ${snapshot.d365Total ? 'błędy uprawnień D365' : snapshot.adfFail ? 'nieudane pipeline ADF' : 'wyjątki i komponent o najwyższym wpływie'}.`;
+  } else if (snapshot.severity === 'warn') {
+    title.textContent = `${snapshot.env}: degradacja lub niepełne dane`;
+    narrative.textContent = snapshot.p95 > 300 ? `Opóźnienie p95 wynosi ${snapshot.p95} ms. Sprawdź komponenty i logi z warningami.` : 'Dashboard działa, ale część sygnałów wymaga weryfikacji.';
+  } else {
+    title.textContent = `${snapshot.env}: stabilnie`;
+    narrative.textContent = 'Nie widać krytycznych sygnałów. Monitoruj trendy ruchu, opóźnienia i wyjątki.';
+  }
+
+  meta.innerHTML = [
+    `${snapshot.source}`,
+    `Zakres ${snapshot.range}`,
+    `Requests ${snapshot.totalReq.toLocaleString()}`,
+    `p95 ${snapshot.p95 || '—'} ms`,
+    `Wyjątki ${snapshot.excTotal}`,
+    `D365 ${snapshot.d365Total}`,
+    `ADF fail ${snapshot.adfFail}`,
+    tzAbbr(),
+  ].map(v => `<span class="meta-chip">${esc(v)}</span>`).join('');
+
+  const items = [];
+  if (snapshot.mode === 'empty') {
+    items.push({sev:'warn', title:'Brak skonfigurowanych kluczy', detail:'App Insights i Log Analytics nie są dostępne dla bieżącego środowiska.', action:'Konfiguruj', onclick:'openModal()'});
+    items.push({sev:'ok', title:'Tryb demo dostępny', detail:'Możesz uruchomić dane demonstracyjne do testu układu i przepływu.', action:'Włącz demo', onclick:'toggleDemo()'});
+  }
+  if (snapshot.mode === 'error') items.push({sev:'error', title:'Błąd API', detail:snapshot.error || 'Sprawdź klucze i uprawnienia API.', action:'Klucze', onclick:'openModal()'});
+  if (snapshot.d365Total > 0) items.push({sev:'error', title:`D365: ${snapshot.d365Total} błędów uprawnień`, detail:'Missing privilege -2147220960. Skopiuj rekomendację dla konsultanta.', action:'D365', onclick:"location.hash='d365Panel'"});
+  if (snapshot.adfFail > 0) items.push({sev:'error', title:`ADF: ${snapshot.adfFail} nieudanych pipeline`, detail:'Sprawdź ostatnie runy i czasy wykonania.', action:'ADF', onclick:"location.hash='dataPipelines'"});
+  if (snapshot.excTotal > 0) items.push({sev:snapshot.excTotal > 15 ? 'error' : 'warn', title:`Wyjątki: ${snapshot.excTotal} wystąpień`, detail:'Otwórz szczegóły wyjątków i porównaj źródło z komponentami.', action:'Wyjątki', onclick:"location.hash='exceptionsPanel'"});
+  if (snapshot.p95 > 300) items.push({sev:snapshot.p95 > 750 ? 'error' : 'warn', title:`Opóźnienie p95: ${snapshot.p95} ms`, detail:'Skoreluj z ruchem, komponentami i logami warning/error.', action:'Wydajność', onclick:"location.hash='performance'"});
+  if (items.length === 0) items.push({sev:'ok', title:'Brak aktywnych problemów', detail:'Najważniejsze sygnały są w normie dla wybranego zakresu.', action:'Odśwież', onclick:'manualRefresh()'});
+
+  attentionBadge.textContent = items.filter(i => i.sev !== 'ok').length ? `${items.filter(i => i.sev !== 'ok').length} aktywne` : 'czysto';
+  attentionBadge.className = 'panel-badge ' + (items.some(i => i.sev === 'error') ? 'red' : items.some(i => i.sev === 'warn') ? 'yellow' : 'green');
+  attentionBody.innerHTML = items.map(i => `
+    <div class="attention-item">
+      <div class="attention-sev ${i.sev}" aria-hidden="true"></div>
+      <div>
+        <div class="attention-title">${esc(i.title)}</div>
+        <div class="attention-detail">${esc(i.detail)}</div>
+      </div>
+      <button class="attention-action" onclick="${i.onclick}">${esc(i.action)}</button>
+    </div>`).join('');
+
+  const likelyCause = snapshot.d365Total ? 'brakujące uprawnienie Dataverse' :
+    snapshot.adfFail ? 'awaria lub timeout pipeline ADF' :
+    snapshot.excTotal ? `wyjątki w ${snapshot.worstComponent?.name || 'komponentach aplikacji'}` :
+    snapshot.p95 > 300 ? 'degradacja opóźnień' : 'brak jednoznacznej anomalii';
+  const nextStep = snapshot.d365Total ? 'otwórz panel D365 i skopiuj rekomendację roli' :
+    snapshot.adfFail ? 'sprawdź ostatni failed run ADF i skoreluj timestamp z logami' :
+    snapshot.excTotal ? 'otwórz szczegóły wyjątków i przefiltruj logi po Error' :
+    snapshot.p95 > 300 ? 'sprawdź komponenty z najwyższym avg/p95 ms' : 'kontynuuj monitoring';
+  lastAiSummary = `Prawdopodobna przyczyna: ${likelyCause}. Następny krok: ${nextStep}. Wpływ: ${snapshot.excTotal} wyjątków, ${snapshot.d365Total} błędów D365, ${snapshot.adfFail} ADF fail, p95 ${snapshot.p95 || '—'} ms.`;
+  aiInsight.textContent = lastAiSummary;
+  lastIncidentDraft = [
+    `[${snapshot.env}] ${title.textContent}`,
+    `Źródło: ${snapshot.source}, zakres: ${snapshot.range}, czas: ${formatHHMMSS(new Date())} ${tzAbbr()}`,
+    `Requests: ${snapshot.totalReq.toLocaleString()}, peak: ${snapshot.peakReq}/min, p95: ${snapshot.p95 || '—'} ms, wyjątki: ${snapshot.excTotal}, D365: ${snapshot.d365Total}, ADF fail: ${snapshot.adfFail}`,
+    `AI helper: ${lastAiSummary}`,
+  ].join('\n');
+  updateChartSummaries(snapshot);
+}
+
+function updateChartSummaries(snapshot = lastSnapshot) {
+  const req = document.getElementById('reqChartSummary');
+  const lat = document.getElementById('latChartSummary');
+  if (req) req.textContent = snapshot && snapshot.totalReq ? `Łącznie ${snapshot.totalReq.toLocaleString()} wywołań, szczyt ${snapshot.peakReq}/min w zakresie ${snapshot.range}.` : 'Brak danych o wywołaniach w wybranym zakresie.';
+  if (lat) lat.textContent = snapshot && snapshot.p95 ? `p50 ${snapshot.p50} ms, p95 ${snapshot.p95} ms, p99 ${snapshot.p99} ms.` : 'Brak danych o opóźnieniach w wybranym zakresie.';
+}
+
+async function copyText(text, successMsg) {
+  try {
+    await navigator.clipboard.writeText(text || '');
+    if (successMsg) alert(successMsg);
+  } catch {
+    prompt('Skopiuj tekst:', text || '');
+  }
+}
+
+function copyAiSummary() { copyText(lastAiSummary, 'Skopiowano wnioski AI helpera.'); }
+function copyIncidentDraft() { copyText(lastIncidentDraft, 'Skopiowano raport diagnostyczny.'); }
+
+function exportSnapshot() {
+  const payload = { ...(lastSnapshot || {}), aiSummary: lastAiSummary, incidentDraft: lastIncidentDraft };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `az-monitor-snapshot-${currentEnv}-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function setLogFilter(level) {
+  const sel = document.getElementById('logFilter');
+  if (sel) sel.value = level;
+  location.hash = 'logsPanel';
+  renderLogs();
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -990,6 +1314,8 @@ function renderEmpty() {
   // Exceptions
   document.getElementById('excTotal').textContent = '—';
   document.getElementById('excBody').innerHTML = emptyHtml;
+  allErrorEvents = [];
+  renderAllErrors([]);
 
   // ADF
   document.getElementById('adfBadge').textContent = '—';
@@ -1005,17 +1331,24 @@ function renderEmpty() {
 
   // D365
   renderD365Errors([]);
+  renderOperationalSummary({mode:'empty', components:[], exceptions:[], d365Errors:[], adfPipelines:[]});
 }
 
 // ══════════════════════════════════════════════════════════════════
 // MODAL
 // ══════════════════════════════════════════════════════════════════
 function openModal() {
+  lastFocusedElement = document.activeElement;
   switchModalEnv(currentEnv);
-  document.getElementById('modalOverlay').classList.remove('hidden');
+  const overlay = document.getElementById('modalOverlay');
+  overlay.classList.remove('hidden');
+  setTimeout(() => document.getElementById('m_appId')?.focus(), 0);
 }
 function closeModal() {
-  document.getElementById('modalOverlay').classList.add('hidden');
+  const overlay = document.getElementById('modalOverlay');
+  const wasOpen = !overlay.classList.contains('hidden');
+  overlay.classList.add('hidden');
+  if (wasOpen) lastFocusedElement?.focus?.();
 }
 function overlayClick(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
 
@@ -1024,6 +1357,7 @@ function switchModalSrc(src) {
   document.querySelectorAll('.src-tab').forEach(t => t.classList.toggle('active', t.dataset.src === src));
   document.getElementById('srcPanel_ai').style.display = src === 'ai' ? '' : 'none';
   document.getElementById('srcPanel_la').style.display = src === 'la' ? '' : 'none';
+  updatePressedStates();
 }
 
 function switchModalEnv(env) {
@@ -1034,6 +1368,7 @@ function switchModalEnv(env) {
   document.getElementById('m_apiKey').value        = k?.apiKey        || '';
   document.getElementById('m_laWorkspaceId').value = k?.laWorkspaceId || '';
   document.getElementById('m_laApiKey').value      = k?.laApiKey      || '';
+  updatePressedStates();
 }
 
 async function saveKey() {
@@ -1156,7 +1491,7 @@ async function fetchLiveData(appId, apiKey) {
   const since = rangeToKql(currentRange);
   const bin = currentRange <= 1 ? '2m' : currentRange <= 6 ? '10m' : currentRange <= 24 ? '30m' : '2h';
 
-  const [reqRes, latRes, excRes, traceRes, rolesRes, adfRes] = await Promise.all([
+  const [reqRes, latRes, excRes, traceRes, rolesRes, allErrorsRes, adfRes] = await Promise.all([
     // requests over time (total)
     aiQuery(appId, apiKey,
       `requests | where timestamp > ${since}
@@ -1189,13 +1524,22 @@ async function fetchLiveData(appId, apiKey) {
            last_seen  = max(timestamp)
          by cloud_RoleName
        | order by calls desc`),
+    // all error events for the selected range
+    aiQuery(appId, apiKey,
+      `union exceptions, traces
+       | where timestamp > ${since}
+       | where severityLevel >= 3 or itemType == "exception"
+       | extend errorKind = iff(isnotempty(type), "Exception", iff(severityLevel >= 4, "Error", "Warning"))
+       | project timestamp, errorKind, type, message=coalesce(outerMessage, innermostMessage, message), cloud_RoleName, operation_Name
+       | order by timestamp desc
+       | take 500`),
     // ADF — NIE odpytujemy już App Insights o ADF; przeniesione do fetchAdfFromLA (Log Analytics)
     // Graceful fallback żeby nie blokować reszty danych
     aiQuery(appId, apiKey,
       `requests | where timestamp > ${since} | take 0`).catch(() => ({ tables: [{ rows: [] }] })),  // placeholder — nieużywany
   ]);
 
-  return { reqRes, latRes, excRes, traceRes, rolesRes, adfRes: { tables: [{ rows: [] }] } };
+  return { reqRes, latRes, excRes, traceRes, rolesRes, allErrorsRes, adfRes: { tables: [{ rows: [] }] } };
 }
 
 // Osobna funkcja — ADF z Log Analytics
@@ -1317,26 +1661,26 @@ function updateBanner(mode, msg, componentCount) {
   if (mode === 'live') {
     b.className = 'data-banner live';
     const compInfo = componentCount ? ` · <b>${componentCount}</b> komponentów` : '';
-    t.innerHTML = `✅ Dane live — App Insights <b>${currentEnv.toUpperCase()}</b>${compInfo}`;
-    b.querySelector('.banner-actions').innerHTML = `<button class="btn btn-ghost" onclick="openModal()">⚙️ Klucze</button>`;
+    t.innerHTML = `Dane live — App Insights <b>${currentEnv.toUpperCase()}</b>${compInfo}`;
+    b.querySelector('.banner-actions').innerHTML = `<button class="btn btn-ghost" onclick="openModal()">Klucze</button>`;
   } else if (mode === 'loading') {
     b.className = 'data-banner loading';
     t.innerHTML = `<span class="spinner"></span>Ładowanie danych z App Insights ${currentEnv.toUpperCase()}…`;
     b.querySelector('.banner-actions').innerHTML = '';
   } else if (mode === 'error') {
     b.className = 'data-banner error';
-    t.innerHTML = `❌ ${esc(msg) || 'Błąd API — sprawdź klucze'}`;
-    b.querySelector('.banner-actions').innerHTML = `<button class="btn btn-primary" onclick="openModal()">🔑 Klucze</button>`;
+    t.innerHTML = `${esc(msg) || 'Błąd API — sprawdź klucze'}`;
+    b.querySelector('.banner-actions').innerHTML = `<button class="btn btn-primary" onclick="openModal()">Klucze</button>`;
   } else if (mode === 'demo') {
     b.className = 'data-banner demo';
-    t.innerHTML = `🎭 Tryb DEMO — środowisko <b>${currentEnv.toUpperCase()}</b> · dane demonstracyjne`;
-    b.querySelector('.banner-actions').innerHTML = `<button class="btn btn-primary" onclick="openModal()">🔑 Skonfiguruj klucze</button>`;
+    t.innerHTML = `Tryb DEMO — środowisko <b>${currentEnv.toUpperCase()}</b> · dane demonstracyjne`;
+    b.querySelector('.banner-actions').innerHTML = `<button class="btn btn-primary" onclick="openModal()">Skonfiguruj klucze</button>`;
   } else if (mode === 'empty') {
     b.className = 'data-banner demo';
-    t.innerHTML = `🔌 Brak kluczy dla <b>${currentEnv.toUpperCase()}</b> — skonfiguruj App Insights lub włącz DEMO`;
+    t.innerHTML = `Brak kluczy dla <b>${currentEnv.toUpperCase()}</b> — skonfiguruj App Insights lub włącz DEMO`;
     b.querySelector('.banner-actions').innerHTML = `
-      <button class="btn btn-ghost" onclick="toggleDemo()">🎭 Włącz DEMO</button>
-      <button class="btn btn-primary" onclick="openModal()">🔑 Skonfiguruj klucze</button>`;
+      <button class="btn btn-ghost" onclick="toggleDemo()">Włącz DEMO</button>
+      <button class="btn btn-primary" onclick="openModal()">Skonfiguruj klucze</button>`;
   }
 }
 
@@ -1410,20 +1754,40 @@ function mockLogs(n=24){
   return arr.sort((a,b)=>b.ts-a.ts);
 }
 
+function mockErrorEvents(excs, n=80) {
+  const cfg = ENV_CONFIG[currentEnv];
+  const base = excs && excs.length ? excs : BASE_EXCEPTIONS;
+  const sources = ['ProcessOrderHttp','SendNotification','ProductsController','SyncInventoryTimer','ADF'];
+  const now = Date.now();
+  return Array.from({length:Math.max(12, Math.round(n * cfg.errMult / 2))}, (_, i) => {
+    const e = base[randInt(0, base.length)];
+    const ts = new Date(now - randInt(0, currentRange * 60 * 60 * 1000));
+    return {
+      timestamp: ts.toISOString(),
+      kind: i % 5 === 0 ? 'Warning' : 'Exception',
+      type: e.type || e.name,
+      message: e.outerMessage || e.name,
+      source: e.source || sources[randInt(0, sources.length)],
+      operation: ['GET /api/products','POST /api/orders','Timer SyncInventory','ServiceBus SendNotification'][randInt(0,4)],
+    };
+  }).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
+
 // ══════════════════════════════════════════════════════════════════
 // RENDER
 // ══════════════════════════════════════════════════════════════════
-function renderStatus(isLive=false) {
+function renderStatus(isLive=false, exceptionsForStatus=null) {
   const cfg=ENV_CONFIG[currentEnv];
   const avail=currentEnv==='uat'?96.5+Math.random():99.1+Math.random()*.8;
-  const errCount=(isLive?liveExceptions:BASE_EXCEPTIONS.map(e=>({...e,count:Math.round(e.count*cfg.errMult)}))).reduce((s,e)=>s+e.count,0);
+  const errSource=isLive?(exceptionsForStatus||liveExceptions):BASE_EXCEPTIONS.map(e=>({...e,count:Math.round(e.count*cfg.errMult)}));
+  const errCount=errSource.reduce((s,e)=>s+e.count,0);
   const totalReq=reqData.reduce((a,b)=>a+b,0);
   const avgLat=Math.round(latData.reduce((a,b)=>a+b,0)/latData.length)||0;
   const cards=[
-    {label:'Availability',     value:avail.toFixed(2)+'%', sub:currentEnv.toUpperCase()+' env',cls:avail>99?'ok':'warn',icon:'✅'},
-    {label:'Avg Latency (p50)',value:avgLat+'ms',           sub:'ostatnie '+(currentRange===72?'3d':currentRange+'h'),cls:avgLat<250?'ok':'warn',icon:'⚡'},
-    {label:'Błędy',            value:errCount,              sub:'wyjątki łącznie',cls:errCount>50?'error':errCount>15?'warn':'ok',icon:'⚠️'},
-    {label:'Requests',         value:totalReq.toLocaleString(),sub:'wszystkie usługi',cls:'ok',icon:'📊'},
+    {label:'Dostępność',       value:avail.toFixed(2)+'%', sub:currentEnv.toUpperCase()+' env',cls:avail>99?'ok':'warn',icon:'UP'},
+    {label:'Opóźnienie avg',   value:avgLat+'ms',           sub:'ostatnie '+(currentRange===72?'3d':currentRange+'h'),cls:avgLat<250?'ok':'warn',icon:'MS'},
+    {label:'Błędy',            value:errCount,              sub:'wyjątki łącznie',cls:errCount>50?'error':errCount>15?'warn':'ok',icon:'ER'},
+    {label:'Wywołania',        value:totalReq.toLocaleString(),sub:'wszystkie usługi',cls:'ok',icon:'RQ'},
   ];
   document.getElementById('statusBar').innerHTML=cards.map(c=>`
     <div class="status-card ${c.cls}">
@@ -1478,7 +1842,7 @@ function initCharts(){
 }
 
 function renderFunctions(funcs, isLive){
-  funcs = funcs || envFunctions();
+  funcs = [...(funcs || envFunctions())].sort((a,b) => (b.errors || 0) - (a.errors || 0) || (b.p95Ms || b.avgMs || 0) - (a.p95Ms || a.avgMs || 0));
   const showP95 = isLive && funcs[0] && funcs[0].p95Ms !== undefined;
 
   // Mobile cards
@@ -1536,12 +1900,62 @@ function renderExceptions(excs){
   liveExceptions=excs;
   const total=excs.reduce((s,e)=>s+e.count,0);
   document.getElementById('excTotal').textContent=total+' łącznie';
-  document.getElementById('excBody').innerHTML=excs.map((e,i)=>`<div class="exc-item" onclick="showExcDetail(${i})"><div class="exc-name"><span class="exc-count">${esc(e.count)}×</span>${escTrunc(e.name||e.type||'Unknown')}</div><div class="exc-detail">📍 ${esc(e.source||e.cloud_RoleName||'—')} · ⏱ ${esc(e.last||'—')}</div></div>`).join('');
+  document.getElementById('excBody').innerHTML=excs.map((e,i)=>`<button class="exc-item" onclick="showExcDetail(${i})"><div class="exc-name"><span class="exc-count">${esc(e.count)}×</span>${escTrunc(e.name||e.type||'Unknown')}</div><div class="exc-detail">Źródło: ${esc(e.source||e.cloud_RoleName||'—')} · Ostatni: ${esc(e.last||'—')}</div></button>`).join('');
+}
+
+function updateErrorSourceFilter(events) {
+  const sel = document.getElementById('errorSourceFilter');
+  if (!sel) return;
+  const current = sel.value;
+  const sources = [...new Set(events.map(e => e.source || '—'))].sort((a,b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">Wszystkie źródła</option>' + sources.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  sel.value = sources.includes(current) ? current : '';
+}
+
+function renderAllErrors(events) {
+  if (events) {
+    allErrorEvents = events;
+    updateErrorSourceFilter(events);
+  }
+  const sourceFilter = document.getElementById('errorSourceFilter')?.value || '';
+  const query = (document.getElementById('errorSearch')?.value || '').trim().toLowerCase();
+  const rangeLabel = currentRange === 72 ? '3d' : currentRange + 'h';
+  const filtered = allErrorEvents.filter(e => {
+    if (sourceFilter && (e.source || '—') !== sourceFilter) return false;
+    if (!query) return true;
+    return [e.message, e.type, e.source, e.operation, e.kind].some(v => String(v || '').toLowerCase().includes(query));
+  });
+
+  const badge = document.getElementById('allErrorsBadge');
+  const body = document.getElementById('allErrorsBody');
+  if (!badge || !body) return;
+  badge.textContent = `${filtered.length}/${allErrorEvents.length} · ${rangeLabel}`;
+  badge.className = `panel-badge ${allErrorEvents.length ? 'red' : 'green'}`;
+
+  if (allErrorEvents.length === 0) {
+    body.innerHTML = `<div class="error-empty"><div class="empty-state"><div class="empty-icon">OK</div><div class="empty-title">Brak błędów w wybranym okresie</div><div class="empty-sub">Zmień zakres czasu lub środowisko, aby sprawdzić inne dane.</div></div></div>`;
+    return;
+  }
+  if (filtered.length === 0) {
+    body.innerHTML = `<div class="error-empty"><div class="empty-state"><div class="empty-icon">—</div><div class="empty-title">Brak wyników filtra</div><div class="empty-sub">Wyczyść wyszukiwanie lub wybierz inne źródło.</div></div></div>`;
+    return;
+  }
+  body.innerHTML = `<div class="error-list">` + filtered.map(e => `
+    <div class="error-row">
+      <div class="error-time">${esc(formatHHMMSS(e.timestamp))}</div>
+      <div class="error-kind">${esc(e.kind || 'Error')}</div>
+      <div class="error-message">
+        <div>${escTrunc(e.message || e.type || '—', 260)}</div>
+        ${e.operation ? `<div style="color:var(--text3);font-size:10px;margin-top:2px">Operacja: ${esc(e.operation)}</div>` : ''}
+      </div>
+      <div class="error-source">${esc(e.source || '—')}</div>
+    </div>`).join('') + `</div>`;
 }
 
 function showExcDetail(i) {
   const e = liveExceptions[i];
   if (!e) return;
+  lastFocusedElement = document.activeElement;
   document.getElementById('excModalTitle').textContent = e.name || e.type || 'Unknown';
   document.getElementById('excModalSubtitle').textContent = e.source || e.cloud_RoleName || '—';
   document.getElementById('excModalType').textContent = e.type || '';
@@ -1550,9 +1964,13 @@ function showExcDetail(i) {
   document.getElementById('excModalLast').textContent = e.last || '—';
   document.getElementById('excModalCount').textContent = e.count + '×';
   document.getElementById('excModalOverlay').classList.remove('hidden');
+  setTimeout(() => document.querySelector('#excModalOverlay .modal-close')?.focus(), 0);
 }
 function closeExcModal() {
-  document.getElementById('excModalOverlay').classList.add('hidden');
+  const overlay = document.getElementById('excModalOverlay');
+  const wasOpen = !overlay.classList.contains('hidden');
+  overlay.classList.add('hidden');
+  if (wasOpen) lastFocusedElement?.focus?.();
 }
 
 function renderADF(livePipelines) {
@@ -1636,9 +2054,14 @@ function renderAvail(){
 }
 
 function renderLogs(logArr){
+  if (logArr) logs = logArr;
   const filter=document.getElementById('logFilter').value;
+  const query=(document.getElementById('logSearch')?.value||'').trim().toLowerCase();
   const source=logArr||logs;
-  const filtered=filter?source.filter(l=>l.level===filter):source;
+  const filtered=(filter?source.filter(l=>l.level===filter):source).filter(l=>{
+    if(!query) return true;
+    return [l.msg,l.message,l.source,l.cloud_RoleName,l.level].some(v=>String(v||'').toLowerCase().includes(query));
+  });
   const lvMap={Error:'err',Warning:'warn',Information:'info',Trace:'trace',1:'trace',2:'info',3:'warn',4:'err'};
   document.getElementById('logsBody').innerHTML=filtered.slice(0,16).map(l=>{
     const lv=l.level;
@@ -1746,6 +2169,7 @@ function renderD365Errors(errors) {
   const body  = document.getElementById('d365Body');
 
   if (!errors || errors.length === 0) {
+    lastD365Grouped = [];
     badge.textContent = '0 błędów';
     badge.className = 'panel-badge green';
     body.innerHTML = `<div class="panel-body"><div class="empty-state"><div class="empty-icon">✅</div><div class="empty-title">Brak błędów uprawnień D365</div><div class="empty-sub">Żadnych błędów -2147220960 w wybranym przedziale czasu</div></div></div>`;
@@ -1753,6 +2177,7 @@ function renderD365Errors(errors) {
   }
 
   const grouped = groupD365Errors(errors);
+  lastD365Grouped = grouped;
   const totalCount = grouped.reduce((s,e) => s+e.count, 0);
   badge.textContent = `${grouped.length} typów · ${totalCount}×`;
   badge.className = 'panel-badge red';
@@ -1767,10 +2192,10 @@ function renderD365Errors(errors) {
       const recommendation = buildRecommendation(e);
 
       return `<div class="d365-item" id="d365item_${idx}" style="margin-bottom:${idx<grouped.length-1?'10px':'0'}">
-        <div class="d365-header" onclick="toggleD365(${idx})">
+        <button class="d365-header" onclick="toggleD365(${idx})" aria-expanded="false" aria-controls="d365details_${idx}">
           <div class="d365-header-left">
             <div class="d365-title">
-              🔒 Brakujące uprawnienie:
+              Brakujące uprawnienie:
               <span style="color:${privTypeColor}">${esc(e.privilegeType)}</span>
               na encji <span style="color:var(--text)">${esc(e.entityDisplayName !== '—' ? e.entityDisplayName : e.entityLogicalName)}</span>
             </div>
@@ -1783,10 +2208,10 @@ function renderD365Errors(errors) {
           </div>
           <div class="d365-meta">
             <span class="d365-count">${esc(e.count)}×</span>
-            <span class="d365-chevron">▶</span>
+            <span class="d365-chevron" aria-hidden="true">▶</span>
           </div>
-        </div>
-        <div class="d365-details">
+        </button>
+        <div class="d365-details" id="d365details_${idx}">
           <div class="d365-grid">
             <div class="d365-field">
               <div class="d365-field-label">Encja (Logical Name)</div>
@@ -1838,13 +2263,46 @@ function renderD365Errors(errors) {
             </div>
           </div>
           <div class="d365-recommendation">${recommendation}</div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-sm btn-export" onclick="copyD365Recommendation(${idx})">Kopiuj rekomendację</button>
+            <button class="btn-sm btn-export" onclick="copyD365Field(${idx}, 'entityLogicalName')">Kopiuj encję</button>
+            <button class="btn-sm btn-export" onclick="copyD365Field(${idx}, 'privilegeId')">Kopiuj Privilege ID</button>
+          </div>
         </div>
       </div>`;
     }).join('') + `</div>`;
 }
 
 function toggleD365(idx) {
-  document.getElementById('d365item_' + idx).classList.toggle('expanded');
+  const item = document.getElementById('d365item_' + idx);
+  item.classList.toggle('expanded');
+  const btn = item.querySelector('.d365-header');
+  if (btn) btn.setAttribute('aria-expanded', String(item.classList.contains('expanded')));
+}
+
+function buildRecommendationText(e) {
+  const entity = e.entityDisplayName !== '—' ? e.entityDisplayName : e.entityLogicalName;
+  const app = e.applicationName !== '—' ? e.applicationName : e.applicationId;
+  return [
+    'Rekomendacja D365',
+    `Aplikacja: ${app}`,
+    `Encja: ${entity} (${e.entityLogicalName})`,
+    `Brakujące uprawnienie: ${e.missingPrivilege}`,
+    `Typ operacji: ${e.privilegeType}`,
+    `Privilege ID: ${e.privilegeId}`,
+    `Object Type Code: ${e.objectTypeCode}`,
+    'Kroki: znajdź użytkownika aplikacji w Power Platform Admin Center, otwórz role zabezpieczeń i dodaj wymagane uprawnienie w zakresie Organization albo przypisz dedykowaną rolę integracyjną.',
+  ].join('\n');
+}
+
+function copyD365Recommendation(idx) {
+  const e = lastD365Grouped[idx];
+  if (e) copyText(buildRecommendationText(e), 'Skopiowano rekomendację D365.');
+}
+
+function copyD365Field(idx, field) {
+  const e = lastD365Grouped[idx];
+  if (e) copyText(e[field] || '—', 'Skopiowano wartość.');
 }
 
 function buildRecommendation(e) {
@@ -2022,6 +2480,10 @@ function showSkeleton() {
   document.getElementById('excTotal').textContent = '…';
   document.getElementById('excBody').innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">${Array.from({length:3},()=>`<div><div class="skeleton skeleton-line" style="width:90%;height:11px"></div><div class="skeleton skeleton-line" style="width:50%;height:9px"></div></div>`).join('')}</div>`;
 
+  // All errors
+  document.getElementById('allErrorsBadge').textContent = '…';
+  document.getElementById('allErrorsBody').innerHTML = `<div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">${Array.from({length:6},()=>`<div class="skeleton skeleton-row"></div>`).join('')}</div>`;
+
   // ADF
   document.getElementById('adfBadge').textContent = '…';
   document.getElementById('adfBody').innerHTML = `<div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">${Array.from({length:3},()=>`<div class="skeleton skeleton-row"></div>`).join('')}</div>`;
@@ -2057,6 +2519,7 @@ function setEnv(env) {
   if (env === currentEnv) return; // kliknięcie tego samego — ignoruj
   currentEnv = env;
   document.querySelectorAll('.env-btn').forEach(b => b.classList.toggle('active', b.dataset.env === env));
+  updatePressedStates();
   updateDemoBtn(); // stan DEMO zależy od kluczy danego środowiska
   stopCountdown();
   fullRefresh().then(() => startCountdown());
@@ -2065,6 +2528,7 @@ function setEnv(env) {
 function setRange(h) {
   currentRange = h;
   document.querySelectorAll('.time-btn').forEach(b => b.classList.toggle('active', b.textContent === (h===72?'3d':h+'h')));
+  updatePressedStates();
   stopCountdown();
   fullRefresh().then(() => startCountdown());
 }
@@ -2078,7 +2542,7 @@ async function fullRefresh() {
   setRefreshButtonState(true);
 
   const key = getEnvKey(currentEnv);
-  const isLiveMode = hasKey(currentEnv) || hasLaKey(currentEnv);
+  const isLiveMode = hasKey(currentEnv);
 
   if (isLiveMode) showSkeleton();
 
@@ -2087,7 +2551,7 @@ async function fullRefresh() {
     updateBanner('loading');
     updateEnvChip('loading');
     try {
-      const [{ reqRes, latRes, excRes, traceRes, rolesRes }, d365Errors, adfLiveData] = await Promise.all([
+      const [{ reqRes, latRes, excRes, traceRes, rolesRes, allErrorsRes }, d365Errors, adfLiveData] = await Promise.all([
         fetchLiveData(key.appId, key.apiKey),
         fetchD365Errors(key.appId, key.apiKey).catch(() => []),
         hasLaKey(currentEnv)
@@ -2107,17 +2571,28 @@ async function fullRefresh() {
 
       const trRows = traceRes.tables[0].rows;
       const trData = trRows.map(r => ({ timestamp: r[0], level: r[1], message: r[2], cloud_RoleName: r[3] }));
+      const allErrRows = allErrorsRes.tables[0].rows;
+      const allErrData = allErrRows.map(r => ({
+        timestamp: r[0],
+        kind: r[1],
+        type: r[2],
+        message: r[3] || r[2] || '—',
+        source: r[4] || '—',
+        operation: r[5] || '',
+      }));
 
       hideSkeleton();
-      renderStatus(true);
+      renderStatus(true, excData);
       initCharts();
       renderFunctions(liveComponents, true);
       updateMiniStats(liveComponents);
       renderExceptions(excData);
+      renderAllErrors(allErrData);
       renderADF(adfLiveData);
       renderAvail();
       renderLogs(trData);
       renderD365Errors(d365Errors);
+      renderOperationalSummary({mode:'live', components:liveComponents, exceptions:excData, d365Errors, adfPipelines:adfLiveData});
       updateBanner('live', null, liveComponents.length);
       updateEnvChip('live');
     } catch(e) {
@@ -2126,6 +2601,7 @@ async function fullRefresh() {
       updateBanner('error', 'Błąd API: ' + e.message);
       updateEnvChip('error');
       renderEmpty();
+      renderOperationalSummary({mode:'error', error:e.message, components:[], exceptions:[], d365Errors:[], adfPipelines:[]});
     }
   } else if (demoMode) {
     // ── DEMO MODE ──
@@ -2151,26 +2627,52 @@ function renderMock() {
   const d = mockTimeSeries(currentRange);
   reqData = d.r; latData = d.l; labels = d.lb;
   logs = mockLogs(30);
+  const funcs = envFunctions();
+  const excs = BASE_EXCEPTIONS.map(e=>({...e,count:Math.max(1,Math.round(e.count*ENV_CONFIG[currentEnv].errMult))}));
+  const errorEvents = mockErrorEvents(excs);
+  const d365 = mockD365Errors();
+  const adf = BASE_ADF.map(p => {
+    const cfg = ENV_CONFIG[currentEnv];
+    if (p.status === 'Running') return p;
+    return { ...p, status: Math.random() < cfg.adfFailRate && p.status === 'Succeeded' ? 'Failed' : p.status };
+  });
   renderStatus(false);
   initCharts();
-  updateMiniStats();
-  renderFunctions();
-  renderExceptions();
-  renderADF();
+  updateMiniStats(funcs);
+  renderFunctions(funcs, false);
+  renderExceptions(excs);
+  renderAllErrors(errorEvents);
+  renderADF(adf);
   renderAvail();
   renderLogs();
-  renderD365Errors(mockD365Errors());
+  renderD365Errors(d365);
+  renderOperationalSummary({mode:'demo', components:funcs, exceptions:excs, d365Errors:d365, adfPipelines:adf});
 }
 
 // ══════════════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════════════
-window.addEventListener('resize', initCharts);
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+window.addEventListener('resize', () => { initCharts(); updateChartSummaries(); });
+document.addEventListener('keydown', e => {
+  const openOverlay = document.querySelector('.modal-overlay:not(.hidden)');
+  if (e.key === 'Escape') {
+    closeModal();
+    closeExcModal();
+    return;
+  }
+  if (e.key === 'Tab' && openOverlay) {
+    const focusable = [...openOverlay.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && el.offsetParent !== null);
+    if (focusable.length === 0) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+});
 
 initTzSelect();
 updateKeyIcons();
 updateDemoBtn();
+updatePressedStates();
 fullRefresh().then(() => startCountdown());
 </script>
 </body>
