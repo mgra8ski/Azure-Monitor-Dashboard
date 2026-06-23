@@ -149,15 +149,15 @@
 
   /* HEALTH SUMMARY */
   .health-summary{display:grid;grid-template-columns:1fr;gap:12px}
-  .health-card{background:linear-gradient(180deg,rgba(13,33,64,.96),rgba(9,24,43,.96));border:1px solid var(--border);border-radius:10px;padding:16px;display:grid;gap:14px;position:relative;overflow:hidden}
+  .health-card{background:linear-gradient(180deg,rgba(13,33,64,.96),rgba(9,24,43,.96));border:1px solid var(--border);border-radius:10px;padding:16px;display:grid;align-content:start;gap:14px;position:relative;overflow:hidden}
   .health-card::before{content:'';position:absolute;inset:0 0 auto;height:3px;background:var(--health-color,var(--green))}
   .health-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
   .health-label{font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
   .health-title{font-size:24px;line-height:1.12;font-weight:600;color:var(--text)}
   .health-title.ok{color:var(--green)}.health-title.warn{color:var(--yellow)}.health-title.error{color:var(--red)}
   .health-narrative{font-size:13px;line-height:1.55;color:var(--text2);max-width:840px}
-  .health-meta{display:flex;flex-wrap:wrap;gap:8px}
-  .meta-chip{font-family:var(--mono);font-size:10px;color:var(--text2);border:1px solid var(--border);background:rgba(255,255,255,.03);border-radius:999px;padding:4px 9px}
+  .health-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .meta-chip{display:inline-flex;align-items:center;height:24px;font-family:var(--mono);font-size:10px;line-height:1;color:var(--text2);border:1px solid var(--border);background:rgba(255,255,255,.03);border-radius:999px;padding:0 9px;white-space:nowrap}
   .health-actions{display:flex;gap:8px;flex-wrap:wrap}
   .attention-panel .panel-body{padding:0}
   .attention-list{display:grid;gap:0}
@@ -174,6 +174,7 @@
   .ai-title{font-family:var(--mono);font-size:11px;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em}
   .ai-body{font-size:13px;color:var(--text2);line-height:1.6}
   .ai-actions{display:flex;flex-wrap:wrap;gap:8px}
+  .ai-query{font-family:var(--mono);font-size:10px;line-height:1.55;color:var(--text2);background:rgba(5,13,26,.45);border:1px solid var(--border);border-radius:7px;padding:10px;max-height:150px;overflow:auto;white-space:pre-wrap}
   .chart-summary{font-family:var(--mono);font-size:10px;color:var(--text3);line-height:1.5;margin-top:10px}
 
   /* STATUS BAR */
@@ -292,13 +293,23 @@
   /* ERROR EVENTS */
   .error-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .error-list{display:flex;flex-direction:column;gap:0}
-  .error-row{display:grid;grid-template-columns:72px 68px minmax(0,1fr) 150px;gap:10px;align-items:flex-start;padding:10px 16px;border-bottom:1px solid rgba(26,58,92,.4);font-family:var(--mono);font-size:11px}
+  .error-row{display:grid;grid-template-columns:72px 68px minmax(0,1fr) 150px;gap:10px;align-items:flex-start;padding:10px 16px;border:0;border-bottom:1px solid rgba(26,58,92,.4);font-family:var(--mono);font-size:11px;background:transparent;color:inherit;text-align:left;width:100%;cursor:pointer}
+  .error-row:hover{background:rgba(244,63,94,.06)}
+  .error-row.grouped{grid-template-columns:72px minmax(0,1fr) 90px 150px}
   .error-row:last-child{border-bottom:none}
   .error-time{color:var(--text3);white-space:nowrap}
   .error-kind{font-size:9px;padding:2px 7px;border-radius:999px;border:1px solid rgba(244,63,94,.35);color:var(--red);background:rgba(244,63,94,.08);text-align:center;white-space:nowrap}
   .error-message{color:var(--text2);line-height:1.55;word-break:break-word}
   .error-source{color:var(--text3);text-align:right;word-break:break-word}
+  .error-count{font-size:12px;font-weight:700;color:var(--yellow);text-align:right}
+  .error-mode{display:flex;gap:3px;border:1px solid var(--border);border-radius:6px;padding:2px;background:rgba(255,255,255,.02)}
+  .error-mode-btn{border:0;background:transparent;color:var(--text3);font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:4px;cursor:pointer}
+  .error-mode-btn.active{background:var(--panel2);color:var(--accent2)}
   .error-empty{padding:18px 16px}
+  .error-detail-grid{display:grid;grid-template-columns:140px minmax(0,1fr);gap:8px 12px;font-family:var(--mono);font-size:10px}
+  .error-detail-key{color:var(--text3);word-break:break-word}
+  .error-detail-val{color:var(--text2);word-break:break-word;white-space:pre-wrap}
+  .error-detail-query{font-family:var(--mono);font-size:10px;color:var(--text2);background:rgba(5,13,26,.45);border:1px solid var(--border);border-radius:7px;padding:10px;max-height:120px;overflow:auto;white-space:pre-wrap;margin-bottom:14px}
 
   /* DATA SOURCE BANNER */
   .data-banner{
@@ -333,6 +344,9 @@
   .modal-close:hover{color:var(--text)}
   .modal-body{padding:20px 24px}
   .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+  #errorDetailOverlay .modal{max-height:calc(100vh - 40px);display:flex;flex-direction:column}
+  #errorDetailOverlay .modal-header,#errorDetailOverlay .modal-footer{flex-shrink:0}
+  #errorDetailOverlay .modal-body{overflow:auto;min-height:0}
 
   .field{margin-bottom:16px}
   .field:last-child{margin-bottom:0}
@@ -421,7 +435,7 @@
     main{padding:24px 28px;gap:20px}
     .section-nav{padding:9px 28px;top:calc(var(--header-h) + var(--env-h))}
     .section-nav a{font-size:11px;padding:6px 12px}
-    .health-summary{grid-template-columns:minmax(0,1.6fr) minmax(320px,.8fr);align-items:stretch}
+    .health-summary{grid-template-columns:minmax(0,1.6fr) minmax(320px,.8fr);align-items:start}
     .health-card{padding:20px}
     .health-title{font-size:30px}
     .health-narrative{font-size:14px}
@@ -460,7 +474,9 @@
     .attention-action{grid-column:2;justify-self:start}
     .data-banner{font-size:10px}
     .error-row{grid-template-columns:58px 58px minmax(0,1fr);padding:10px 12px}
+    .error-row.grouped{grid-template-columns:52px minmax(0,1fr) 54px}
     .error-source{grid-column:3;text-align:left}
+    .error-row.grouped .error-source{grid-column:2;text-align:left}
     .grid-2,.grid-3{grid-template-columns:1fr}
   }
 </style>
@@ -562,9 +578,13 @@
     <div class="ai-card" id="aiAssistant">
       <div class="ai-head">
         <div class="ai-title">AI diagnostic helper</div>
-        <button class="btn btn-ghost" onclick="copyAiSummary()">Kopiuj wnioski</button>
+        <div class="ai-actions">
+          <button class="btn btn-ghost" onclick="copyAiSummary()">Kopiuj wnioski</button>
+          <button class="btn btn-ghost" onclick="copyAiQuery()">Kopiuj KQL</button>
+        </div>
       </div>
       <div class="ai-body" id="aiInsight">Po odświeżeniu danych zobaczysz krótką interpretację: prawdopodobną przyczynę, wpływ i następny krok diagnostyczny.</div>
+      <pre class="ai-query" id="aiQueryPreview">// Zapytanie KQL pojawi się po odświeżeniu danych.</pre>
       <div class="ai-actions">
         <button class="btn btn-ghost" onclick="setLogFilter('Error')">Pokaż błędy w logach</button>
         <button class="btn btn-ghost" onclick="location.hash='d365Panel'">Przejdź do D365</button>
@@ -643,6 +663,10 @@
     <div class="panel-header">
       <div class="panel-title"><div class="dot" style="background:var(--red)"></div>Wszystkie błędy z okresu</div>
       <div class="error-toolbar">
+        <div class="error-mode" role="group" aria-label="Tryb widoku błędów">
+          <button class="error-mode-btn active" id="errorModeGrouped" onclick="setErrorViewMode('grouped')" aria-pressed="true">Grupy</button>
+          <button class="error-mode-btn" id="errorModeEvents" onclick="setErrorViewMode('events')" aria-pressed="false">Zdarzenia</button>
+        </div>
         <select id="errorSourceFilter" onchange="renderAllErrors()" class="log-filter-sel" aria-label="Filtruj błędy po źródle">
           <option value="">Wszystkie źródła</option>
         </select>
@@ -736,6 +760,27 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeExcModal()">Zamknij</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ERROR EVENT DETAIL MODAL ══════════════════════════════════ -->
+<div class="modal-overlay hidden" id="errorDetailOverlay" onclick="if(event.target===this)closeErrorDetailModal()">
+  <div class="modal" style="max-width:760px" role="dialog" aria-modal="true" aria-labelledby="errorDetailTitle">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="errorDetailTitle">Szczegóły błędu</div>
+        <div class="modal-subtitle" id="errorDetailSubtitle">Pobrane z Application Insights</div>
+      </div>
+      <button class="modal-close" onclick="closeErrorDetailModal()" aria-label="Zamknij szczegóły błędu">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="error-detail-query" id="errorDetailQuery"></div>
+      <div id="errorDetailBody" class="error-detail-grid"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="copyCurrentErrorDetail()">Kopiuj szczegóły</button>
+      <button class="btn btn-ghost" onclick="closeErrorDetailModal()">Zamknij</button>
     </div>
   </div>
 </div>
@@ -866,14 +911,18 @@ let currentEnv = 'prod';
 let currentRange = 6;
 let reqData = [], latData = [], labels = [], logs = [];
 let allErrorEvents = [];
+let renderedErrorItems = [];
 let modalEnv = 'dev';
 let modalSrc = 'ai'; // 'ai' | 'la'
 let demoMode = localStorage.getItem(LS_DEMO) !== 'false';
 let lastSnapshot = null;
 let lastAiSummary = '';
+let lastAiQuery = '';
 let lastIncidentDraft = '';
 let lastD365Grouped = [];
 let lastFocusedElement = null;
+let errorViewMode = 'grouped';
+let currentErrorDetailText = '';
 
 // ══════════════════════════════════════════════════════════════════
 // TIMEZONE
@@ -1166,6 +1215,7 @@ function renderOperationalSummary(input = {}) {
   const attentionBody = document.getElementById('attentionBody');
   const attentionBadge = document.getElementById('attentionBadge');
   const aiInsight = document.getElementById('aiInsight');
+  const aiQueryPreview = document.getElementById('aiQueryPreview');
 
   const color = snapshot.severity === 'error' ? 'var(--red)' : snapshot.severity === 'warn' ? 'var(--yellow)' : 'var(--green)';
   healthCard.style.setProperty('--health-color', color);
@@ -1232,14 +1282,49 @@ function renderOperationalSummary(input = {}) {
     snapshot.excTotal ? 'otwórz szczegóły wyjątków i przefiltruj logi po Error' :
     snapshot.p95 > 300 ? 'sprawdź komponenty z najwyższym avg/p95 ms' : 'kontynuuj monitoring';
   lastAiSummary = `Prawdopodobna przyczyna: ${likelyCause}. Następny krok: ${nextStep}. Wpływ: ${snapshot.excTotal} wyjątków, ${snapshot.d365Total} błędów D365, ${snapshot.adfFail} ADF fail, p95 ${snapshot.p95 || '—'} ms.`;
+  lastAiQuery = buildAiAppInsightsQuery(snapshot);
   aiInsight.textContent = lastAiSummary;
+  if (aiQueryPreview) aiQueryPreview.textContent = lastAiQuery;
   lastIncidentDraft = [
     `[${snapshot.env}] ${title.textContent}`,
     `Źródło: ${snapshot.source}, zakres: ${snapshot.range}, czas: ${formatHHMMSS(new Date())} ${tzAbbr()}`,
     `Requests: ${snapshot.totalReq.toLocaleString()}, peak: ${snapshot.peakReq}/min, p95: ${snapshot.p95 || '—'} ms, wyjątki: ${snapshot.excTotal}, D365: ${snapshot.d365Total}, ADF fail: ${snapshot.adfFail}`,
     `AI helper: ${lastAiSummary}`,
+    `App Insights KQL:\n${lastAiQuery}`,
   ].join('\n');
   updateChartSummaries(snapshot);
+}
+
+function kqlStringLiteral(value) {
+  return String(value || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function buildAiAppInsightsQuery(snapshot) {
+  const since = rangeToKql(currentRange);
+  const windowBin = currentRange <= 1 ? '2m' : currentRange <= 6 ? '10m' : currentRange <= 24 ? '30m' : '2h';
+  const worstComponent = snapshot?.worstComponent?.name || '';
+  const topError = groupErrorEvents(allErrorEvents)[0];
+  const sourceFilter = worstComponent || topError?.source || '';
+  const typeFilter = topError?.type && topError.type !== '—' ? topError.type : '';
+  const sourceWhere = sourceFilter ? `\n| where cloud_RoleName == "${kqlStringLiteral(sourceFilter)}" or operation_Name has "${kqlStringLiteral(sourceFilter)}"` : '';
+  const typeWhere = typeFilter ? `\n| where type == "${kqlStringLiteral(typeFilter)}" or message has "${kqlStringLiteral(typeFilter)}" or outerMessage has "${kqlStringLiteral(typeFilter)}"` : '';
+
+  return `// Zakres: ${currentRange === 72 ? 'ostatnie 3 dni' : 'ostatnie ' + currentRange + 'h'}
+let since = ${since};
+let suspectSource = "${kqlStringLiteral(sourceFilter)}";
+let suspectType = "${kqlStringLiteral(typeFilter)}";
+union isfuzzy=true exceptions, traces
+| where timestamp > since${sourceWhere}${typeWhere}
+| where severityLevel >= 3 or isnotempty(type)
+| extend errorKind = iff(isnotempty(type), "Exception", iff(severityLevel >= 4, "Error", "Warning"))
+| summarize count=count(), firstSeen=min(timestamp), lastSeen=max(timestamp), sampleMessage=any(coalesce(outerMessage, innermostMessage, message)), operations=make_set(operation_Name, 5)
+  by errorKind, type, cloud_RoleName
+| order by count desc
+;
+requests
+| where timestamp > since
+| summarize calls=count(), failed=countif(success == false), avgMs=round(avg(duration), 0), p95Ms=round(percentile(duration, 95), 0) by bin(timestamp, ${windowBin}), cloud_RoleName
+| order by timestamp desc`;
 }
 
 function updateChartSummaries(snapshot = lastSnapshot) {
@@ -1259,6 +1344,7 @@ async function copyText(text, successMsg) {
 }
 
 function copyAiSummary() { copyText(lastAiSummary, 'Skopiowano wnioski AI helpera.'); }
+function copyAiQuery() { copyText(lastAiQuery, 'Skopiowano zapytanie KQL do App Insights.'); }
 function copyIncidentDraft() { copyText(lastIncidentDraft, 'Skopiowano raport diagnostyczny.'); }
 
 function exportSnapshot() {
@@ -1528,9 +1614,10 @@ async function fetchLiveData(appId, apiKey) {
     aiQuery(appId, apiKey,
       `union exceptions, traces
        | where timestamp > ${since}
-       | where severityLevel >= 3 or itemType == "exception"
+       | where severityLevel >= 3 or isnotempty(type)
        | extend errorKind = iff(isnotempty(type), "Exception", iff(severityLevel >= 4, "Error", "Warning"))
-       | project timestamp, errorKind, type, message=coalesce(outerMessage, innermostMessage, message), cloud_RoleName, operation_Name
+       | extend itemIdSafe=tostring(column_ifexists("itemId", "")), operationIdSafe=tostring(column_ifexists("operation_Id", "")), problemIdSafe=tostring(column_ifexists("problemId", ""))
+       | project timestamp, errorKind, type, message=coalesce(outerMessage, innermostMessage, message), cloud_RoleName, operation_Name, itemIdSafe, operationIdSafe, problemIdSafe
        | order by timestamp desc
        | take 500`),
     // ADF — NIE odpytujemy już App Insights o ADF; przeniesione do fetchAdfFromLA (Log Analytics)
@@ -1912,6 +1999,47 @@ function updateErrorSourceFilter(events) {
   sel.value = sources.includes(current) ? current : '';
 }
 
+function errorGroupKey(e) {
+  const normalizedMessage = String(e.message || e.type || '—')
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/ig, '{guid}')
+    .replace(/\b\d{4,}\b/g, '{num}')
+    .slice(0, 180);
+  return [e.kind || 'Error', e.type || '—', e.source || '—', normalizedMessage].join('|');
+}
+
+function groupErrorEvents(events) {
+  const map = new Map();
+  for (const e of events) {
+    const key = errorGroupKey(e);
+    const ts = new Date(e.timestamp).getTime() || 0;
+    if (!map.has(key)) {
+      map.set(key, { ...e, count: 1, firstSeen: e.timestamp, lastSeen: e.timestamp, lastTs: ts, operations: new Set(e.operation ? [e.operation] : []) });
+    } else {
+      const g = map.get(key);
+      g.count++;
+      if (ts > g.lastTs) {
+        Object.assign(g, {
+          timestamp: e.timestamp, kind: e.kind, type: e.type, message: e.message,
+          source: e.source, operation: e.operation, itemId: e.itemId,
+          operationId: e.operationId, problemId: e.problemId, lastTs: ts, lastSeen: e.timestamp,
+        });
+      }
+      if (new Date(e.timestamp).getTime() < new Date(g.firstSeen).getTime()) g.firstSeen = e.timestamp;
+      if (e.operation) g.operations.add(e.operation);
+    }
+  }
+  return [...map.values()].sort((a,b) => b.count - a.count || b.lastTs - a.lastTs);
+}
+
+function setErrorViewMode(mode) {
+  errorViewMode = mode === 'events' ? 'events' : 'grouped';
+  document.getElementById('errorModeGrouped')?.classList.toggle('active', errorViewMode === 'grouped');
+  document.getElementById('errorModeEvents')?.classList.toggle('active', errorViewMode === 'events');
+  document.getElementById('errorModeGrouped')?.setAttribute('aria-pressed', String(errorViewMode === 'grouped'));
+  document.getElementById('errorModeEvents')?.setAttribute('aria-pressed', String(errorViewMode === 'events'));
+  renderAllErrors();
+}
+
 function renderAllErrors(events) {
   if (events) {
     allErrorEvents = events;
@@ -1929,19 +2057,41 @@ function renderAllErrors(events) {
   const badge = document.getElementById('allErrorsBadge');
   const body = document.getElementById('allErrorsBody');
   if (!badge || !body) return;
-  badge.textContent = `${filtered.length}/${allErrorEvents.length} · ${rangeLabel}`;
+  const grouped = groupErrorEvents(filtered);
+  badge.textContent = errorViewMode === 'grouped'
+    ? `${grouped.length} grup · ${filtered.length}/${allErrorEvents.length} · ${rangeLabel}`
+    : `${filtered.length}/${allErrorEvents.length} · ${rangeLabel}`;
   badge.className = `panel-badge ${allErrorEvents.length ? 'red' : 'green'}`;
 
   if (allErrorEvents.length === 0) {
+    renderedErrorItems = [];
     body.innerHTML = `<div class="error-empty"><div class="empty-state"><div class="empty-icon">OK</div><div class="empty-title">Brak błędów w wybranym okresie</div><div class="empty-sub">Zmień zakres czasu lub środowisko, aby sprawdzić inne dane.</div></div></div>`;
     return;
   }
   if (filtered.length === 0) {
+    renderedErrorItems = [];
     body.innerHTML = `<div class="error-empty"><div class="empty-state"><div class="empty-icon">—</div><div class="empty-title">Brak wyników filtra</div><div class="empty-sub">Wyczyść wyszukiwanie lub wybierz inne źródło.</div></div></div>`;
     return;
   }
-  body.innerHTML = `<div class="error-list">` + filtered.map(e => `
-    <div class="error-row">
+  if (errorViewMode === 'grouped') {
+    renderedErrorItems = grouped;
+    body.innerHTML = `<div class="error-list">` + grouped.map((e,i) => `
+      <button class="error-row grouped" onclick="showErrorEventDetail(${i})">
+        <div class="error-time">${esc(formatHHMMSS(e.lastSeen))}</div>
+        <div class="error-message">
+          <div><span class="error-kind">${esc(e.kind || 'Error')}</span> ${escTrunc(e.message || e.type || '—', 240)}</div>
+          <div style="color:var(--text3);font-size:10px;margin-top:4px">
+            Typ: ${esc(e.type || '—')} · Pierwszy: ${esc(formatHHMMSS(e.firstSeen))} · Operacje: ${esc([...e.operations].slice(0,3).join(', ') || '—')}
+          </div>
+        </div>
+        <div class="error-count">${esc(e.count)}×</div>
+        <div class="error-source">${esc(e.source || '—')}</div>
+      </button>`).join('') + `</div>`;
+    return;
+  }
+  renderedErrorItems = filtered;
+  body.innerHTML = `<div class="error-list">` + filtered.map((e,i) => `
+    <button class="error-row" onclick="showErrorEventDetail(${i})">
       <div class="error-time">${esc(formatHHMMSS(e.timestamp))}</div>
       <div class="error-kind">${esc(e.kind || 'Error')}</div>
       <div class="error-message">
@@ -1949,7 +2099,77 @@ function renderAllErrors(events) {
         ${e.operation ? `<div style="color:var(--text3);font-size:10px;margin-top:2px">Operacja: ${esc(e.operation)}</div>` : ''}
       </div>
       <div class="error-source">${esc(e.source || '—')}</div>
-    </div>`).join('') + `</div>`;
+    </button>`).join('') + `</div>`;
+}
+
+function kqlDateTimeLiteral(value) {
+  const d = new Date(value);
+  return isNaN(d) ? 'datetime(null)' : `datetime(${d.toISOString()})`;
+}
+
+function buildErrorDetailQuery(e) {
+  const ts = kqlDateTimeLiteral(e.timestamp || e.lastSeen);
+  const itemFilter = e.itemId ? `\n| where tostring(column_ifexists("itemId", "")) == "${kqlStringLiteral(e.itemId)}"` : '';
+  const fallbackFilter = !e.itemId ? `
+| where cloud_RoleName == "${kqlStringLiteral(e.source || '')}"
+| where operation_Name == "${kqlStringLiteral(e.operation || '')}" or isempty("${kqlStringLiteral(e.operation || '')}")
+| where type == "${kqlStringLiteral(e.type || '')}" or message has "${kqlStringLiteral(String(e.message || '').slice(0,80))}" or outerMessage has "${kqlStringLiteral(String(e.message || '').slice(0,80))}"` : '';
+  return `union isfuzzy=true exceptions, traces
+| where timestamp between (${ts} - 5m .. ${ts} + 5m)${itemFilter}${fallbackFilter}
+| order by timestamp desc
+| take 1`;
+}
+
+async function showErrorEventDetail(i) {
+  const e = renderedErrorItems[i];
+  if (!e) return;
+  lastFocusedElement = document.activeElement;
+  const overlay = document.getElementById('errorDetailOverlay');
+  const title = document.getElementById('errorDetailTitle');
+  const subtitle = document.getElementById('errorDetailSubtitle');
+  const queryBox = document.getElementById('errorDetailQuery');
+  const body = document.getElementById('errorDetailBody');
+  const query = buildErrorDetailQuery(e);
+
+  title.textContent = e.type || e.kind || 'Szczegóły błędu';
+  subtitle.textContent = `${e.source || '—'} · ${formatHHMMSS(e.timestamp || e.lastSeen)}`;
+  queryBox.textContent = query;
+  body.innerHTML = `<div class="error-detail-key">Status</div><div class="error-detail-val"><span class="spinner"></span>Pobieram pełny rekord z Application Insights…</div>`;
+  overlay.classList.remove('hidden');
+  setTimeout(() => document.querySelector('#errorDetailOverlay .modal-close')?.focus(), 0);
+
+  try {
+    const key = getEnvKey(currentEnv);
+    if (!key?.appId || !key?.apiKey) throw new Error('Brak kluczy App Insights dla bieżącego środowiska.');
+    const res = await aiQuery(key.appId, key.apiKey, query);
+    const table = res.tables?.[0];
+    const row = table?.rows?.[0];
+    if (!table || !row) {
+      currentErrorDetailText = `Nie znaleziono pełnego rekordu.\n\nQuery:\n${query}`;
+      body.innerHTML = `<div class="error-detail-key">Wynik</div><div class="error-detail-val">Nie znaleziono pełnego rekordu w App Insights. Spróbuj przełączyć na widok Zdarzenia i kliknąć konkretny wpis.</div>`;
+      return;
+    }
+    const fields = table.columns.map((c, idx) => ({ name: c.name, value: row[idx] }));
+    currentErrorDetailText = fields.map(f => `${f.name}: ${typeof f.value === 'object' ? JSON.stringify(f.value) : f.value}`).join('\n');
+    body.innerHTML = fields.map(f => {
+      const val = typeof f.value === 'object' ? JSON.stringify(f.value, null, 2) : String(f.value ?? '—');
+      return `<div class="error-detail-key">${esc(f.name)}</div><div class="error-detail-val">${esc(val)}</div>`;
+    }).join('');
+  } catch(err) {
+    currentErrorDetailText = `Błąd pobierania szczegółów: ${err.message}\n\nQuery:\n${query}`;
+    body.innerHTML = `<div class="error-detail-key">Błąd</div><div class="error-detail-val">${esc(err.message)}</div>`;
+  }
+}
+
+function closeErrorDetailModal() {
+  const overlay = document.getElementById('errorDetailOverlay');
+  const wasOpen = !overlay.classList.contains('hidden');
+  overlay.classList.add('hidden');
+  if (wasOpen) lastFocusedElement?.focus?.();
+}
+
+function copyCurrentErrorDetail() {
+  copyText(currentErrorDetailText, 'Skopiowano szczegóły błędu.');
 }
 
 function showExcDetail(i) {
@@ -2579,6 +2799,9 @@ async function fullRefresh() {
         message: r[3] || r[2] || '—',
         source: r[4] || '—',
         operation: r[5] || '',
+        itemId: r[6] || '',
+        operationId: r[7] || '',
+        problemId: r[8] || '',
       }));
 
       hideSkeleton();
@@ -2658,6 +2881,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeModal();
     closeExcModal();
+    closeErrorDetailModal();
     return;
   }
   if (e.key === 'Tab' && openOverlay) {
